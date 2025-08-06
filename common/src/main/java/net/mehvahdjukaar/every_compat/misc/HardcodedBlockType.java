@@ -5,6 +5,10 @@ import net.mehvahdjukaar.moonlight.api.set.leaves.LeavesType;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Set;
+
+import static net.mehvahdjukaar.every_compat.configs.UnsafeDisablerConfigs.*;
+
 // ugly mess. Too coupled with WoodTypes|LeavesTypes and too many hardcoded exceptions
 public class HardcodedBlockType {
 
@@ -16,20 +20,26 @@ public class HardcodedBlockType {
     public static String supportedBlockName;
 
     @Nullable
-    public static Boolean isWoodBlockAlreadyRegistered(String blockName, WoodType woodType, String ModId) {
+    public static Boolean isWoodBlockAlreadyRegistered(String entrySetId, String blockName, WoodType woodType, String ModId) {
         woodTypeFromMod = woodType.getNamespace();
         woodidentify = woodType.getId().toString();
         supportedMod = ModId;
         supportedBlockName = blockName;
 
-            /// ========== INCLUDE VANILLA TYPE ========== \\\
+        /// ─────────────────────────── Include Vanilla Type ────────────────────────────
         // Dawn-Of-Time's fancy-fence only has birch but no other vanilla variants
         if (isWoodFrom("dawnoftimebuilder", "", "minecraft:(oak|acacia|jungle|dark_oak|spruce|mangrove|cherry)", "fancy_fence")) return false;
 
+        /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ EXCLUDE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        /// ========== EXCLUDE ========== \\\
-        // Exclude all of Vanilla Types
-        if (woodType.isVanilla()) return true;
+        // Exclude one WoodType from a Wood Mod
+        if (woodTypeList.get().stream().anyMatch(woodidentify::matches)) return true;
+
+        // Exclude one EntrySet from a module
+        if (entrySetList.get().stream().anyMatch(entrySetId::matches)) return true;
+
+        // Exclude all of Vanilla Types that we know of. Excludes other mc namespaced added by mods
+        if (isKnownVanillaWood(woodType)) return true;
 
         // Supported Mods that have supportedBlockId should be excluded due to FramedBlocks
         if (isWoodFrom("", "", "", "torch") && PlatHelper.isModLoaded("framedblocks")) return true;
@@ -44,7 +54,7 @@ public class HardcodedBlockType {
         if (isWoodFrom("quark", "ecologics", "", "stripped_flowering_azalea_post")) return true;
 
 
-        /// ========== INCLUDE ========== \\\
+        /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ INCLUDE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // Makes it so the Guita's Branches block still registers if another mod adds a branch block/item
         if (isWoodFrom("branches", "", "", "branch")) return false;
 
@@ -88,20 +98,27 @@ public class HardcodedBlockType {
     }
 
     @Nullable
-    public static Boolean isLeavesBlockAlreadyRegistered(String blockName, LeavesType leavesType, String supportedModId) {
+    public static Boolean isLeavesBlockAlreadyRegistered(String entrySetId, String blockName, LeavesType leavesType, String supportedModId) {
         leavesTypeFromMod = leavesType.getNamespace();
         leavesidentify = leavesType.getId().toString();
         supportedMod = supportedModId;
         supportedBlockName = blockName;
 
-        /// ========== EXCLUDE ========== \\\
+        /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ EXCLUDE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        // Exclude one LeavesType from a Wood mod
+        if (leavesTypeList.get().stream().anyMatch(leavesidentify::matches)) return true;
+
+        // Exclude one EntrySet from a module
+        if (entrySetList.get().stream().anyMatch(entrySetId::matches)) return true;
+
         // Exclude all of Vanilla Types
         if (leavesType.isVanilla()) return true;
 
         // Traversable-Leaves' leaves is a testing item and should be excluded
         if (isLeavesFrom("", "", "traversable_leaves:dev_leaves", "")) return true;
 
-        /// ========== INCLUDE ========== \\\
+        /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ INCLUDE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // Unrelated to Quark's ancient_leaves & Alex's Cave (ancient_leaves) should be included
         if (isLeavesFrom("quark", "", "alexscaves:ancient", "")) return false;
 
@@ -186,5 +203,18 @@ public class HardcodedBlockType {
         return true;
     }
 
+
+    //for mods that might add in vanilla namespace
+    public static boolean isKnownVanillaWood(WoodType woodType){
+        var id = woodType.getId();
+        if (id.getNamespace().equals("minecraft")) {
+            return VANILLA_WOODS.contains(id.getPath());
+        }
+        return false;
+    }
+
+    private static final Set<String> VANILLA_WOODS = Set.of(
+            "oak", "spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove", "cherry", "bamboo", "crimson", "warped"
+    );
 
 }
