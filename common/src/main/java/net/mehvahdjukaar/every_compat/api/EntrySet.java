@@ -1,12 +1,9 @@
 package net.mehvahdjukaar.every_compat.api;
 
-import net.mehvahdjukaar.every_compat.dynamicpack.ClientDynamicResourcesHandler;
 import net.mehvahdjukaar.moonlight.api.events.AfterLanguageLoadEvent;
 import net.mehvahdjukaar.moonlight.api.misc.Registrator;
 import net.mehvahdjukaar.moonlight.api.platform.ClientHelper;
 import net.mehvahdjukaar.moonlight.api.platform.RegHelper;
-import net.mehvahdjukaar.moonlight.api.resources.pack.DynClientResourcesGenerator;
-import net.mehvahdjukaar.moonlight.api.resources.pack.DynamicDataPack;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceSink;
 import net.mehvahdjukaar.moonlight.api.set.BlockType;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -23,8 +20,14 @@ public interface EntrySet<T extends BlockType> {
 
     String getName();
 
+    ///@deprecated use {@link EntrySet#makeChildKey(SimpleModule)}
+    @Deprecated(forRemoval = true)
+    default String getChildKey(SimpleModule module){
+        return makeChildKey(module);
+    }
+
     @NotNull
-    default String getChildKey(SimpleModule module) {
+    default String makeChildKey(SimpleModule module) {
         return module.getModId() + ":" + getName();
     }
 
@@ -49,6 +52,7 @@ public interface EntrySet<T extends BlockType> {
     void generateModels(SimpleModule module, ResourceManager manager, ResourceSink sink);
 
     void generateTextures(SimpleModule module, ResourceManager manager, ResourceSink sink);
+
 
     default void setupExistingTiles() {
     }

@@ -7,8 +7,8 @@ import net.mehvahdjukaar.every_compat.api.SimpleModule;
 import net.mehvahdjukaar.moonlight.api.resources.RPUtils;
 import net.mehvahdjukaar.moonlight.api.resources.ResType;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceGenTask;
+import net.mehvahdjukaar.moonlight.api.set.wood.VanillaWoodTypes;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
-import net.mehvahdjukaar.moonlight.api.set.wood.WoodTypeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -45,7 +45,7 @@ public class TimberFramesModule extends SimpleModule {
         ResourceKey<CreativeModeTab> tab = CreativeModeTabs.BUILDING_BLOCKS;
 
         frame_alpha = SimpleEntrySet.builder(WoodType.class, "timber_frame_alpha",
-                        getModBlock("oak_timber_frame_alpha"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_timber_frame_alpha"), () -> VanillaWoodTypes.OAK,
                         w -> new OakTimberFrameAlphaBlock()
                 )
                 .addTextureM(modRes("block/oak_timber_frame"),
@@ -68,22 +68,20 @@ public class TimberFramesModule extends SimpleModule {
                         EveryCompat.res("block/tf/oak_timber_frame_y_m"))
                 .addTextureM(modRes("block/oak_timber_frame_nega"),
                         EveryCompat.res("block/tf/oak_timber_frame_x_m"))
-                .addTag(modRes("timber_frame"), Registries.BLOCK)
+                .addTag(modRes("timber_frame"), Registries.BLOCK, Registries.ITEM)
                 .addTag(BlockTags.MINEABLE_WITH_AXE, Registries.BLOCK)
-                .addTag(modRes("timber_frame"), Registries.ITEM)
                 .setTabKey(tab)
                 .addRecipe(modRes("oak_timber_frame"))
                 .build();
         this.addEntry(frame_alpha);
 
         frame_beta = SimpleEntrySet.builder(WoodType.class, "timber_frame_beta",
-                        getModBlock("oak_timber_frame_beta"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_timber_frame_beta"), () -> VanillaWoodTypes.OAK,
                         w -> new CompatTimberFrameBetaBlock(frame_alpha.blocks.get(w))
                 )
                 // TEXTURES: Using the same texture above
-                .addTag(modRes("timber_frame"), Registries.BLOCK)
+                .addTag(modRes("timber_frame"), Registries.BLOCK, Registries.ITEM)
                 .addTag(BlockTags.MINEABLE_WITH_AXE, Registries.BLOCK)
-                .addTag(modRes("timber_frame"), Registries.ITEM)
                 .noTab()
                 .build();
         this.addEntry(frame_beta);
@@ -116,10 +114,9 @@ public class TimberFramesModule extends SimpleModule {
     }
 
     @Override
-    // MCMETA ---
+    // MCMETA
     public void addDynamicClientResources(Consumer<ResourceGenTask> executor) {
         super.addDynamicClientResources(executor);
-
         executor.accept((manager, sink) -> {
             frame_alpha.blocks.forEach((wood, block) -> {
 
@@ -142,7 +139,7 @@ public class TimberFramesModule extends SimpleModule {
 
                         sink.addJson(EveryCompat.res(newPath), mcmeta, ResType.BLOCK_MCMETA);
                     } catch (IOException e) {
-                        EveryCompat.LOGGER.error("Failed to get oak_{}'s MCMETA : {}", resLoc.toString(), e);
+                        EveryCompat.LOGGER.error("Failed to get {}'s MCMETA : {}", resLoc.toString(), e);
                     }
                 }
             });

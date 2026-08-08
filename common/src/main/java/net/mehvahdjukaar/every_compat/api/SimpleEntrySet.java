@@ -1,11 +1,10 @@
 package net.mehvahdjukaar.every_compat.api;
 
 import com.google.common.base.Preconditions;
-import com.mojang.datafixers.util.Pair;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.mehvahdjukaar.every_compat.EveryCompatClient;
-import net.mehvahdjukaar.every_compat.misc.ModelConfiguration;
+import net.mehvahdjukaar.every_compat.misc.ExtraModelConfiguration;
 import net.mehvahdjukaar.every_compat.misc.ResourcesUtils;
 import net.mehvahdjukaar.moonlight.api.events.AfterLanguageLoadEvent;
 import net.mehvahdjukaar.moonlight.api.item.BlockTypeBasedBlockItem;
@@ -16,11 +15,9 @@ import net.mehvahdjukaar.moonlight.api.resources.BlockTypeResTransformer;
 import net.mehvahdjukaar.moonlight.api.resources.ResType;
 import net.mehvahdjukaar.moonlight.api.resources.assets.LangBuilder;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceSink;
-import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
 import net.mehvahdjukaar.moonlight.api.set.BlockSetAPI;
 import net.mehvahdjukaar.moonlight.api.set.BlockType;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
-import net.mehvahdjukaar.moonlight.core.misc.McMetaFile;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -57,7 +54,7 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
     @Nullable
     protected final Object renderType;
 
-    protected ModelConfiguration modelConfiguration;
+    protected ExtraModelConfiguration modelConfiguration;
 
 
     public SimpleEntrySet(Class<T> type,
@@ -71,11 +68,12 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
                           @Nullable TriFunction<T, B, Item.Properties, Item> itemFactory,
                           @Nullable SimpleEntrySet.ITileHolder<?> tileFactory,
                           @Nullable Object renderType,
-                          BiFunction<T, ResourceManager, Pair<List<Palette>, @Nullable McMetaFile>> paletteSupplier,
+                          @Nullable
+                          BiFunction<T, ResourceManager, PaletteStrategy.PaletteAndAnimation> paletteSupplier,
                           @Nullable Consumer<BlockTypeResTransformer<T>> extraTransform,
                           boolean mergedPalette, boolean copyTint,
                           Predicate<T> condition,
-                          ModelConfiguration modelConfig
+                          ExtraModelConfiguration modelConfig
     ) {
         super(type, name, prefix, baseType, tab, tabMode, paletteSupplier, extraTransform, mergedPalette, copyTint, condition);
         this.blockFactory = blockSupplier;
@@ -113,28 +111,29 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
             //?? wtf im using disabled to allow for null??
             throw new UnsupportedOperationException("Base block cant be null (" + this.typeName + " for " + module.modId + " module)");
 
-        String childKey = getChildKey(module);
-        if (childKey.contains("minecraft")) childKey = childKey.replace("minecraft:", "");
-        for (T w : types) {
-            String name = getBlockName(w);
-            String fullName = module.shortenedId() + "/" + w.getNamespace() + "/" + name;
-            String entrySetId = module.getModId() +":"+ this.typeName;
+        String childKey = makeChildKey(module);
+        if (childKey.contains("minecraft")) childKey = childKey.replace("minecraft:", ""); // DO NOT remove this because it's a childKey for BlockType's children & Gems-Realm require it
+        for (T blockType : types) {
+            ResourceLocation id = makeFullEntryID(module, blockType);
 
-            if (module.isEntryAlreadyRegistered(entrySetId, name, w, BuiltInRegistries.BLOCK)) continue;
+            if (module.isEntryAlreadyRegistered(childKey, id, blockType, BuiltInRegistries.BLOCK)) continue;
 
-            if (condition.test(w)) {
-                B block = blockFactory.apply(w);
-                //for blocks that fail
-                if (block != null) {
-                    this.blocks.put(w, block);
+            if (condition.test(blockType)) {
+                B block = blockFactory.apply(blockType);
+                if(block != null) {
+                    try {
+                        Preconditions.checkArgument(block != Blocks.AIR, "Block factory returned AIR block instance");
+                        registry.register(id, block);
 
-                    registry.register(module.makeMyRes(fullName), block);
-                    w.addChild(childKey, block);
+                        this.blocks.put(blockType, block);
+                        blockType.addChild(childKey, block);
 
-                    if (lootMode == LootTableMode.DROP_SELF && YEET_JSONS) {
-                        SIMPLE_DROPS.add(block);
+                        if (lootMode == LootTableMode.DROP_SELF && YEET_JSONS) {
+                            SIMPLE_DROPS.add(block);
+                        }
+                    } catch (Exception e) {
+                        throw new UnsupportedOperationException("Failed to create or register block of " + blockType.getTranslationKey() + " with an EntrySetId: " + childKey + ". ERROR: " + e);
                     }
-                    totalChildren++;
                 }
             }
         }
@@ -151,7 +150,7 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
         var possibleNamespaces = alreadySupportedMods.toArray(String[]::new);
         for (var w : Objects.requireNonNull(BlockSetAPI.getTypeRegistry(this.getTypeClass())).getValues()) {
             if (!items.containsKey(w) && w.getChild(childKey) == null) {
-                String path = getBlockName(w);
+                String path = makeEntryName(w);
                 Block block = getOptionalBlock(path, w.getNamespace());
                 if (block == null) block = getOptionalBlock(path, possibleNamespaces);
                 if (block != null && w.getChildKey(block) == null) {
@@ -163,6 +162,7 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
             }
         }
     }
+
 
     @Nullable
     private static Block getOptionalBlock(String path, String... namespaces) {
@@ -177,32 +177,33 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
         return null;
     }
 
+    @Deprecated(forRemoval = true)
     @NotNull
     public String getBlockName(T w) {
-        String name;
-        if (prefix != null) {
-            name = this.prefix + "_" + w.getTypeName();
-            if (!this.postfix.isEmpty()) name += "_" + this.postfix;
-        } else {
-            name = w.getTypeName() + "_" + this.postfix;
-        }
-        return name;
+        return makeEntryName(w);
     }
 
     @Override
     public void registerItems(SimpleModule module, Registrator<Item> registry) {
-        blocks.forEach((w, value) -> {
+        blocks.forEach((blockType, value) -> {
             Item i;
+            String childKey = makeChildKey(module);
 
             if (itemFactory != null) {
-                i = itemFactory.apply(w, value, new Item.Properties());
+                i = itemFactory.apply(blockType, value, new Item.Properties());
             } else {
-                i = new BlockTypeBasedBlockItem<>(value, new Item.Properties(), w);
+                i = new BlockTypeBasedBlockItem<>(value, new Item.Properties(), blockType);
             }
             //for ones that don't have item
             if (i != null) {
-                this.items.put(w, i);
-                registry.register(Utils.getID(value), i);
+                this.items.put(blockType, i);
+                ResourceLocation id = Utils.getID(value);
+                if (id.toString().equals("minecraft:air")) {
+                    ResourceLocation expectedName = makeFullEntryID(module, blockType);
+                    throw new UnsupportedOperationException("Attempted to register a Item of " + blockType.getTranslationKey() + " with an EntrySetId: " + childKey + ". " +
+                            "This means that the block with expected ID: " + expectedName + " does not have an registry ID assigned");
+                }
+                registry.register(id, i);
             }
         });
     }
@@ -250,11 +251,11 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
     }
 
     @Override
-    public void generateModels(SimpleModule module, ResourceManager manager, ResourceSink handler) {
-        ResourcesUtils.generateStandardBlockModels(manager, handler, blocks, baseType.get(),
+    public void generateModels(SimpleModule module, ResourceManager manager, ResourceSink sink) {
+        ResourcesUtils.generateStandardBlockFiles(manager, sink, blocks, baseType.get(),
                 makeModelTransformer(module, manager), makeBlockStateTransformer(module, manager), this.modelConfiguration
         );
-        ResourcesUtils.generateStandardItemModels(manager, handler, items, baseType.get(),
+        ResourcesUtils.generateStandardItemModels(manager, sink, items, baseType.get(),
                 makeModelTransformer(module, manager), this.modelConfiguration
         );
     }
@@ -270,11 +271,14 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
     }
 
     protected BlockTypeResTransformer<T> makeBlockStateTransformer(SimpleModule module, ResourceManager manager) {
-        String baseBlockName = baseType.get().getTypeName();
-        return BlockTypeResTransformer.<T>create(module.modId, manager)
-                .replaceWithTextureFromChild("minecraft:block/" + baseBlockName + "_planks", "planks")
-                .replaceBlockType(baseBlockName)
-                .IDReplaceType(baseBlockName);
+        BlockTypeResTransformer<T> blockstateTransformer = BlockTypeResTransformer.<T>create(module.modId, manager);
+        String oldTypeName = baseType.get().getTypeName();
+        if (extraModelTransform != null) extraModelTransform.accept(blockstateTransformer);
+
+        return blockstateTransformer
+                .replaceWithTextureFromChild("minecraft:block/" + oldTypeName + "_planks", "planks")
+                .replaceBlockType(oldTypeName)
+                .IDReplaceType(oldTypeName);
     }
 
     protected BlockTypeResTransformer<T> makeLootTableTransformer(SimpleModule module, ResourceManager manager) {
@@ -301,13 +305,6 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
         return new Builder<>(type, name, prefix, baseType, baseBlock, blockSupplier);
     }
 
-    @Environment(EnvType.CLIENT)
-    public void registerTileRenderer(ClientHelper.BlockEntityRendererEvent event, BlockEntityRendererProvider<BlockEntity> renderer) {
-        if (tileHolder != null) {
-            tileHolder.registerRenderer(event, renderer);
-        }
-    }
-
     //!! SUBCLASS
     public static class Builder<T extends BlockType, B extends Block> extends AbstractSimpleEntrySet.Builder<Builder<T, B>, T, B, Item> {
         protected final Supplier<@Nullable B> baseBlock;
@@ -321,7 +318,7 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
         @Nullable
         protected Object renderType = null;
 
-        protected ModelConfiguration modelConfig = ModelConfiguration.EMPTY;
+        protected ExtraModelConfiguration extraModelConfig = ExtraModelConfiguration.EMPTY;
 
         protected Builder(Class<T> type, String name, @Nullable String prefix, Supplier<T> baseType, Supplier<B> baseBlock, Function<T, B> blockFactory) {
             super(type, name, prefix, baseType);
@@ -334,12 +331,19 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
                 throw new IllegalStateException("Tab for module " + name + " was null!");
             }
             var e = new SimpleEntrySet<>(type, name, prefix, blockFactory, baseBlock, baseType, tab, tabMode, lootMode,
-                    itemFactory, tileHolder, renderType, palette, extraModelTransform, useMergedPalette, copyTint, condition,
-                    this.modelConfig
+                    itemFactory, tileHolder, renderType, null, extraModelTransform, useMergedPalette, copyTint, condition,
+                    this.extraModelConfig
             );
             e.recipeLocations.addAll(this.recipes);
             e.tags.putAll(this.tags);
-            e.textures.addAll(textures);
+            for (var t : this.textures) {
+                if (this.palette != null) {
+                    e.textures.add(t.cloneWithPalette((blockType, manager) ->
+                            this.palette.apply((T) blockType, manager)));
+                } else {
+                    e.textures.add(t);
+                }
+            }
             return e;
         }
 
@@ -402,60 +406,101 @@ public class SimpleEntrySet<T extends BlockType, B extends Block> extends Abstra
         }
 
         public Builder<T, B> defaultRecipe() {
-            this.recipes.add(() -> Utils.getID(this.baseBlock.get()));
+            this.recipes.add(() -> Utils.getID(Objects.requireNonNull(this.baseBlock.get())));
+            return this;
+        }
+
+        /// This won't work because the baseBlock is not registered yet, best time to do this is right after the registering
+        public Builder<T, B> defaultBlockTexture() {
+            this.textures.add(TextureInfo.<T>of(Utils.getID(Objects.requireNonNull(this.baseBlock.get())).withPrefix("block/")).build());
+            return this;
+        }
+
+        public Builder<T, B> defaultItemTexture() {
+            this.textures.add(TextureInfo.<T>of(Utils.getID(Objects.requireNonNull(this.baseBlock.get())).withPrefix("item/")).build());
             return this;
         }
 
 
+        /// Include models/block files so it can be generated - Only MINECRAFT's
+        public Builder<T, B> includeModelsBlock(ResourceLocation... resourceLocations) {
+            if (this.extraModelConfig == ExtraModelConfiguration.EMPTY) {
+                this.extraModelConfig = ExtraModelConfiguration.createNew();
+            }
+            this.extraModelConfig.addModelsBlock(resourceLocations);
+            return this;
+        }
+
+        /// Include models/block files to a List so it can be generated BUT Minecraft is excluded
+        public Builder<T, B> includeModelsBlock(boolean includeInGeneration, ResourceLocation... resourceLocations) {
+            if (this.extraModelConfig == ExtraModelConfiguration.EMPTY) {
+                this.extraModelConfig = ExtraModelConfiguration.createNew(includeInGeneration);
+            }
+            this.extraModelConfig.addModelsBlock(resourceLocations);
+            return this;
+        }
+
+        /// Include models/item files so it can be generated - Only MINECRAFT's
+        public Builder<T, B> includeModelsItem(ResourceLocation... resourceLocations) {
+            if (this.extraModelConfig == ExtraModelConfiguration.EMPTY) {
+                this.extraModelConfig = ExtraModelConfiguration.createNew();
+            }
+            this.extraModelConfig.addModelsItem(resourceLocations);
+            return this;
+        }
+
+        /// Include models/item files to a List so it can be generated BUT Minecraft is excluded
+        public Builder<T, B> includeModelsItem(boolean includeInGeneration, ResourceLocation... resourceLocations) {
+            if (this.extraModelConfig == ExtraModelConfiguration.EMPTY) {
+                this.extraModelConfig = ExtraModelConfiguration.createNew(includeInGeneration);
+            }
+            this.extraModelConfig.addModelsItem(resourceLocations);
+            return this;
+        }
+
+        @Deprecated(forRemoval = true, since = "v2.11.27")
         /// Add models/block files so it can be generated - Only MINECRAFT's
-        public Builder<T, B> generateBlockModels(ResourceLocation... blockModels) {
-            if (this.modelConfig == ModelConfiguration.EMPTY) {
-                this.modelConfig = ModelConfiguration.createNew();
+        /// Use {@link Builder#addModelsBlock(ResourceLocation...)} & Will be removed in v2.11.27
+        public Builder<T, B> generateBlockModels(ResourceLocation... resourceLocations) {
+            if (this.extraModelConfig == ExtraModelConfiguration.EMPTY) {
+                this.extraModelConfig = ExtraModelConfiguration.createNew();
             }
-            this.modelConfig.addBlockModel(blockModels);
+            this.extraModelConfig.addModelsBlock(resourceLocations);
             return this;
         }
 
+        @Deprecated(forRemoval = true, since = "v2.11.27")
         /// Add models/block files to a List so it can be generated BUT Minecraft is excluded
-        public Builder<T, B> generateBlockModels(boolean includeInGeneration, ResourceLocation... blockModels) {
-            if (this.modelConfig == ModelConfiguration.EMPTY) {
-                this.modelConfig = ModelConfiguration.createNew(includeInGeneration);
+        /// Use {@link Builder#addModelsBlock(boolean, ResourceLocation...)} & Will be removed in v2.11.27
+        public Builder<T, B> generateBlockModels(boolean includeInGeneration, ResourceLocation... resourceLocations) {
+            if (this.extraModelConfig == ExtraModelConfiguration.EMPTY) {
+                this.extraModelConfig = ExtraModelConfiguration.createNew(includeInGeneration);
             }
-            this.modelConfig.addBlockModel(blockModels);
+            this.extraModelConfig.addModelsBlock(resourceLocations);
             return this;
         }
 
+        @Deprecated(forRemoval = true, since = "v2.11.27")
         /// Add models/item files so it can be generated - Only MINECRAFT's
-        public Builder<T, B> generateItemModels(ResourceLocation... itemModels) {
-            if (this.modelConfig == ModelConfiguration.EMPTY) {
-                this.modelConfig = ModelConfiguration.createNew();
+        /// Use {@link Builder#addModelsItem(ResourceLocation...)} & Will be removed in v2.11.27
+        public Builder<T, B> generateItemModels(ResourceLocation... resourceLocations) {
+            if (this.extraModelConfig == ExtraModelConfiguration.EMPTY) {
+                this.extraModelConfig = ExtraModelConfiguration.createNew();
             }
-            this.modelConfig.addItemModel(itemModels);
+            this.extraModelConfig.addModelsItem(resourceLocations);
             return this;
         }
 
+        @Deprecated(forRemoval = true, since = "v2.11.27")
         /// Add models/item files to a List so it can be generated BUT Minecraft is excluded
-        public Builder<T, B> generateItemModels(boolean includeInGeneration, ResourceLocation... itemModels) {
-            if (this.modelConfig == ModelConfiguration.EMPTY) {
-                this.modelConfig = ModelConfiguration.createNew(includeInGeneration);
+        /// Use {@link Builder#addModelsItem(boolean, ResourceLocation...)} & Will be removed in v2.11.27
+        public Builder<T, B> generateItemModels(boolean includeInGeneration, ResourceLocation... resourceLocations) {
+            if (this.extraModelConfig == ExtraModelConfiguration.EMPTY) {
+                this.extraModelConfig = ExtraModelConfiguration.createNew(includeInGeneration);
             }
-            this.modelConfig.addItemModel(itemModels);
+            this.extraModelConfig.addModelsItem(resourceLocations);
             return this;
         }
-
-
-        /// Is there a way to get baseBlock?
-//        public Builder<T, B> defaultBlockTexture() {
-//            var test = this.baseBlock;
-//            this.textures.add(TextureInfo.of(Utils.getID(this.baseBlock.get()).withPrefix("block/")).build());
-//            return this;
-//        }
-
-//        public Builder<T, B> defaultItemTexture() {
-//            this.textures.add(TextureInfo.of(Utils.getID(this.baseBlock.get()).withPrefix("item/")).build());
-//            return this;
-//        }
-
     }
 
 

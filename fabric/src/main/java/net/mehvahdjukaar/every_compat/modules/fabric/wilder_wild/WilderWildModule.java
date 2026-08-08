@@ -7,12 +7,12 @@ import net.mehvahdjukaar.every_compat.EveryCompat;
 import net.mehvahdjukaar.every_compat.api.RenderLayer;
 import net.mehvahdjukaar.every_compat.api.SimpleEntrySet;
 import net.mehvahdjukaar.every_compat.api.SimpleModule;
-import net.mehvahdjukaar.every_compat.misc.SpriteHelper;
+import net.mehvahdjukaar.every_compat.misc.CompatSpritesHelper;
 import net.mehvahdjukaar.moonlight.api.resources.RPUtils;
 import net.mehvahdjukaar.moonlight.api.resources.ResType;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceGenTask;
+import net.mehvahdjukaar.moonlight.api.set.wood.VanillaWoodTypes;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
-import net.mehvahdjukaar.moonlight.api.set.wood.WoodTypeRegistry;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -27,8 +27,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Consumer;
 
-import static net.mehvahdjukaar.every_compat.common_classes.TagUtility.createAndAddCustomTags;
-import static net.mehvahdjukaar.every_compat.common_classes.Utilities.doChildrenExistFor;
+import static net.mehvahdjukaar.every_compat.misc.UtilityMisc.doChildrenExistFor;
+import static net.mehvahdjukaar.every_compat.misc.UtilityTag.createAndAddCustomTags;
 
 //SUPPORT: v3.0.7+
 public class WilderWildModule extends SimpleModule {
@@ -41,7 +41,7 @@ public class WilderWildModule extends SimpleModule {
         ResourceKey<CreativeModeTab> tab = CreativeModeTabs.BUILDING_BLOCKS;
 
         hollow_logs = SimpleEntrySet.builder(WoodType.class, "log", "hollowed",
-                        getModBlock("hollowed_oak_log", HollowedLogBlock.class), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("hollowed_oak_log", HollowedLogBlock.class), () -> VanillaWoodTypes.OAK,
                         w -> new HollowedLogBlock(Utils.copyPropertySafe(getModBlock("hollowed_oak_log").get()))
                 )
                 .requiresChildren("stripped_log", "wood") //REASON: textures, recipes
@@ -49,7 +49,7 @@ public class WilderWildModule extends SimpleModule {
                 //REASON: using the vanilla textures instead of generated textures
                 .addModelTransform(m -> m.replaceWithTextureFromChild(
                         "wilderwild:block/hollowed_oak_log", "log",
-                        SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE
+                        CompatSpritesHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE
                 ))
 //-                .createPaletteFromChild("log", SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE)
 //-                .addTexture(modRes("block/hollowed_oak_log"))
@@ -76,7 +76,7 @@ public class WilderWildModule extends SimpleModule {
         this.addEntry(hollow_logs);
 
         stripped_hollow_logs = SimpleEntrySet.builder(WoodType.class, "log", "stripped_hollowed",
-                        getModBlock("stripped_hollowed_oak_log", HollowedLogBlock.class), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("stripped_hollowed_oak_log", HollowedLogBlock.class), () -> VanillaWoodTypes.OAK,
                         w -> new HollowedLogBlock(Utils.copyPropertySafe(getModBlock("stripped_hollowed_oak_log").get()))
                 )
                 .requiresChildren("stripped_log", "stripped_wood") //REASON: textures, recipes
@@ -84,7 +84,7 @@ public class WilderWildModule extends SimpleModule {
                 //REASON: using the vanilla textures instead of generated textures
                 .addModelTransform(m -> m.replaceWithTextureFromChild(
                         "wilderwild:block/stripped_hollowed_oak_log", "stripped_log",
-                        SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE
+                        CompatSpritesHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE
                 ))
 //-                .createPaletteFromChild("stripped_log", SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE)
 //-                .addTexture(modRes("block/stripped_hollowed_oak_log"))

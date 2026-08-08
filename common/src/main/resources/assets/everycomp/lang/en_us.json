@@ -4,7 +4,13 @@
   "tooltip.everycomp.mod": "Supported Mod: %s",
   "tooltip.everycomp.wood_type": "Wood Type: %s",
   "tooltip.everycomp.leaf_type": "Leaves Type: %s",
+  "gui.everycomp.error_screen.title": "Every Compat encountered an Error",
+  "gui.everycomp.error_screen.message": "The Every Compat Modules from the following supported mods had errors while loading. This usually means that the respective mods might have recently updated with breaking changes, requiring a future Every Compat update, or that one of the two mods' module is outdated.\nThe game can't proceed, but you can try to downgrade these supported mods to previous version & wait for an update: %s",
+
   "container.everycomp.chest.name": "%s Chest",
+
+
+  "block.everycomp.q.sniffed_out.hollow_vessel_log": "Hollow Vessel Stem",
 
   "block.everycomp.q.soulfulnether.hollow_fright_log": "Hollow Fright Stem",
 
@@ -62,6 +68,8 @@
   "block.everycomp.tf.netherexp.hollow_claret_log": "Hollow Cerebrage Claret Stem",
 
   "block.everycomp.tf.soulfulnether.hollow_fright_log": "Hollow Fright Stem",
+
+  "block.everycomp.tf.sniffed_out.hollow_vessel_log": "Hollow Vessel Stem",
 
 
   "wood_type.blocksplus.bamboo": "Green Bamboo",
@@ -277,6 +285,18 @@
   "block_type.chipped.stern_stripped_log": "Stern Stripped %s Log",
   "block_type.chipped.wise_stripped_log": "Wise Stripped %s Log",
 
+  "block_type.chipped.apple_leaves": "Apple %s Leaves",
+  "block_type.chipped.cherry_leaves": "Cherry %s Leaves",
+  "block_type.chipped.frosted_leaves": "Frosted %s Leaves",
+  "block_type.chipped.golden_apple_leaves": "Golden Apple %s Leaves",
+  "block_type.chipped.golden_cherry_leaves": "Golden Cherry %s Leaves",
+  "block_type.chipped.magenta_flower_leaves": "Magenta Flower %s Leaves",
+  "block_type.chipped.white_flower_leaves": "White Flower %s Leaves",
+  "block_type.chipped.dead_leaves": "Dead %s Leaves",
+  "block_type.chipped.golden_leaves": "Golden %s Leaves",
+  "block_type.chipped.orange_leaves": "Orange %s Leaves",
+  "block_type.chipped.red_leaves": "Red %s Leaves",
+
 
   "block_type.graveyard.coffin": "%s Coffin",
 
@@ -423,6 +443,7 @@
   "block_type.mcwdoors.tropical_door": "%s Tropical Door",
   "block_type.mcwdoors.western_door": "%s Western Door",
   "block_type.mcwdoors.waffle_door": "%s Waffle Door",
+  "block_type.mcwdoors.whispering_door": "%s Whispering Door",
 
 
   "block_type.mcwfences.picket_fence": "%s Picket Fence",
@@ -487,6 +508,14 @@
   "block_type.mcwfurnitures.table": "%s Table",
   "block_type.mcwfurnitures.triple_drawer": "%s Triple Drawer",
   "block_type.mcwfurnitures.wardrobe": "%s Wardrobe",
+  "block_type.mcwfurnitures.kitchen_cabinet": "%s Kitchen Cabinet",
+  "block_type.mcwfurnitures.double_kitchen_cabinet": "%s Double Kitchen Cabinet",
+  "block_type.mcwfurnitures.glass_kitchen_cabinet": "%s Glass Kitchen Cabinet",
+  "block_type.mcwfurnitures.stripped_kitchen_cabinet": "Stripped %s Kitchen Cabinet",
+  "block_type.mcwfurnitures.stripped_double_kitchen_cabinet": "Stripped %s Double Kitchen Cabinet",
+  "block_type.mcwfurnitures.stripped_glass_kitchen_cabinet": "Stripped %s Glass Kitchen Cabinet",
+  "block_type.mcwfurnitures.kitchen_sink": "%s Kitchen Sink",
+  "block_type.mcwfurnitures.stripped_kitchen_sink": "Stripped %s Kitchen Sink",
 
   "block_type.mcwlights.soul_tiki_torch": "Soul %s Tiki Torch",
   "block_type.mcwlights.tiki_torch": "%s Tiki Torch",
@@ -525,6 +554,7 @@
   "block_type.mcwtrpdoors.swamp_trapdoor": "%s Swamp Trapdoor",
   "block_type.mcwtrpdoors.tropical_trapdoor": "%s Tropical Trapdoor",
   "block_type.mcwtrpdoors.barrel_trapdoor": "%s Barrel Trapdoor",
+  "block_type.mcwtrpdoors.whispering_trapdoor": "%s Whispering Trapdoor",
 
   "block_type.mcwwindows.window": "Resizeable %s Window",
   "block_type.mcwwindows.window2": "Rectangle %s Window",
@@ -892,16 +922,18 @@
   "block_type.beautifulcampfires.campfire": "%s Campfire",
   "block_type.beautifulcampfires.soul_campfire": "%s Soul Campfire",
 
-  "block_type.bbb.layer": "%s Layer",
-  "block_type.bbb.trim": "%s Trim",
+  "block_type.bbb.balustrade": "%s Balustrade",
   "block_type.bbb.beam": "%s Beam",
-  "block_type.bbb.beam_stairs": "%s Beam Stairs",
   "block_type.bbb.beam_slab": "%s Beam Slab",
-  "block_type.bbb.support": "%s Support",
-  "block_type.bbb.frame": "%s Frame",
-  "block_type.bbb.pallet": "%s Pallet",
-  "block_type.bbb.lantern": "%s Lantern",
+  "block_type.bbb.beam_stairs": "%s Beam Stairs",
+  "block_type.bbb.frame": "%s Frame Slab",
   "block_type.bbb.ladder": "%s Ladder",
+  "block_type.bbb.lantern": "%s Lantern",
+  "block_type.bbb.lattice": "%s Lattice",
+  "block_type.bbb.layer": "%s Layer",
+  "block_type.bbb.pallet": "%s Pallet",
+  "block_type.bbb.support": "%s Support",
+  "block_type.bbb.trim": "%s Trim",
   "block_type.bbb.wall": "%s Wall",
 
   "block_type.bewitchment.poppet_shelf": "%s Poppet Shelf",
@@ -1037,7 +1069,7 @@
   "block_type.blocksplus.mossy_mosaic": "Mossy %s Mosaic",
   "block_type.blocksplus.mosaic_pressure_plate": "%s Mosaic Pressure Plate",
 
-  "block_type.sob.counter": "%s Counter",
+  "block_type.sob.counter": "%s Countertop",
 
   "block_type.storagedelight.drawer": "%s Drawer",
   "block_type.storagedelight.drawer_with_door": "%s Drawer With Door",
@@ -1074,6 +1106,7 @@
   "block_type.unusual_furniture.open_riser_stairs": "%s Open Riser Stairs",
   "block_type.unusual_furniture.railing": "%s Railing",
   "block_type.unusual_furniture.beam": "%s Beam",
+  "block_type.unusual_furniture.shelf": "%s Shelf",
 
   "block_type.blockus.herringbone_planks": "Herringbone %s Planks",
   "block_type.blockus.mossy_planks": "Mossy %s Planks",
@@ -1090,5 +1123,7 @@
   "block_type.blockus.cross_timber_frame": "%s Cross Timber Frame",
   "block_type.blockus.stripped_post": "Stripped %s Post",
   "block_type.blockus.post": "%s Post",
-  "block_type.blockus.small_hedge": "%s Small Hedge"
+  "block_type.blockus.small_hedge": "%s Small Hedge",
+
+  "block_type.copperagebackport.shelf": "%s Shelf"
 }

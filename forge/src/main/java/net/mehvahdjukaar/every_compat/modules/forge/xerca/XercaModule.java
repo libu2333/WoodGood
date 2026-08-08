@@ -8,6 +8,7 @@ import net.mehvahdjukaar.moonlight.api.resources.ResType;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceGenTask;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceSink;
 import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
+import net.mehvahdjukaar.moonlight.api.set.wood.VanillaWoodTypes;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodTypeRegistry;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
@@ -41,7 +42,7 @@ public class XercaModule extends SimpleModule {
         ResourceKey<CreativeModeTab> tab = CreativeModeTabs.BUILDING_BLOCKS;
 
         carved1 = SimpleEntrySet.builder(WoodType.class, "1", "carved",
-                        Blocks.CARVED_WARPED_1, () -> WoodTypeRegistry.getValue("warped"),
+                        Blocks.CARVED_WARPED_1, () -> VanillaWoodTypes.WARPED,
                         w -> new BlockCarvedLog(Utils.copyPropertySafe(w.log))
                 )
                 .addModelTransform(m -> m.replaceString("\"xercamod:block/carved_wood/carved_warped\"", "\"xercamod:block/carved_wood/carved_oak\""))
@@ -55,7 +56,7 @@ public class XercaModule extends SimpleModule {
         this.addEntry(carved1);
 
         carved2 = SimpleEntrySet.builder(WoodType.class, "2", "carved",
-                        Blocks.CARVED_WARPED_2, () -> WoodTypeRegistry.getValue("warped"),
+                        Blocks.CARVED_WARPED_2, () -> VanillaWoodTypes.WARPED,
                         w -> new BlockCarvedLog(Utils.copyPropertySafe(w.log))
                 )
                 .addModelTransform(m -> m.replaceString("\"xercamod:block/carved_wood/carved_warped\"", "\"xercamod:block/carved_wood/carved_oak\""))
@@ -69,7 +70,7 @@ public class XercaModule extends SimpleModule {
         this.addEntry(carved2);
 
         carved3 = SimpleEntrySet.builder(WoodType.class, "3", "carved",
-                        Blocks.CARVED_WARPED_3, () -> WoodTypeRegistry.getValue("warped"),
+                        Blocks.CARVED_WARPED_3, () -> VanillaWoodTypes.WARPED,
                         w -> new BlockCarvedLog(Utils.copyPropertySafe(w.log))
                 )
                 .addModelTransform(m -> m.replaceString("\"xercamod:block/carved_wood/carved_warped\"", "\"xercamod:block/carved_wood/carved_oak\""))
@@ -83,7 +84,7 @@ public class XercaModule extends SimpleModule {
         this.addEntry(carved3);
 
         carved4 = SimpleEntrySet.builder(WoodType.class, "4", "carved",
-                        Blocks.CARVED_WARPED_4, () -> WoodTypeRegistry.getValue("warped"),
+                        Blocks.CARVED_WARPED_4, () -> VanillaWoodTypes.WARPED,
                         w -> new BlockCarvedLog(Utils.copyPropertySafe(w.log))
                 )
                 .addModelTransform(m -> m.replaceString("\"xercamod:block/carved_wood/carved_warped\"", "\"xercamod:block/carved_wood/carved_oak\""))
@@ -97,7 +98,7 @@ public class XercaModule extends SimpleModule {
         this.addEntry(carved4);
 
         carved5 = SimpleEntrySet.builder(WoodType.class, "5", "carved",
-                        Blocks.CARVED_WARPED_5, () -> WoodTypeRegistry.getValue("warped"),
+                        Blocks.CARVED_WARPED_5, () -> VanillaWoodTypes.WARPED,
                         w -> new BlockCarvedLog(Utils.copyPropertySafe(w.log))
                 )
                 .addModelTransform(m -> m.replaceString("\"xercamod:block/carved_wood/carved_warped\"", "\"xercamod:block/carved_wood/carved_oak\""))
@@ -112,7 +113,7 @@ public class XercaModule extends SimpleModule {
         this.addEntry(carved5);
 
         carved6 = SimpleEntrySet.builder(WoodType.class, "6", "carved",
-                        Blocks.CARVED_WARPED_6, () -> WoodTypeRegistry.getValue("warped"),
+                        Blocks.CARVED_WARPED_6, () -> VanillaWoodTypes.WARPED,
                         w -> new BlockCarvedLog(Utils.copyPropertySafe(w.log))
                 )
                 .addModelTransform(m -> m.replaceString("\"xercamod:block/carved_wood/carved_warped\"", "\"xercamod:block/carved_wood/carved_oak\""))
@@ -130,7 +131,7 @@ public class XercaModule extends SimpleModule {
         this.addEntry(carved6);
 
         carved7 = SimpleEntrySet.builder(WoodType.class, "7", "carved",
-                        Blocks.CARVED_WARPED_7, () -> WoodTypeRegistry.getValue("warped"),
+                        Blocks.CARVED_WARPED_7, () -> VanillaWoodTypes.WARPED,
                         w -> new BlockCarvedLog(Utils.copyPropertySafe(w.log))
                 )
                 .addModelTransform(m -> m.replaceString("\"xercamod:block/carved_wood/carved_warped\"", "\"xercamod:block/carved_wood/carved_oak\""))
@@ -145,7 +146,7 @@ public class XercaModule extends SimpleModule {
         this.addEntry(carved7);
 
         carved8 = SimpleEntrySet.builder(WoodType.class, "8", "carved",
-                        Blocks.CARVED_WARPED_8, () -> WoodTypeRegistry.getValue("warped"),
+                        Blocks.CARVED_WARPED_8, () -> VanillaWoodTypes.WARPED,
                         w -> new BlockCarvedLog(Utils.copyPropertySafe(w.log))
                 )
                 .addModelTransform(m -> m.replaceString("\"xercamod:block/carved_wood/carved_warped\"", "\"xercamod:block/carved_wood/carved_oak\""))

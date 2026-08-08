@@ -1,20 +1,90 @@
 plugins {
     id "architectury-plugin" version "3.4-SNAPSHOT"
-    id "dev.architectury.loom" version "1.10-SNAPSHOT" apply false
+    id "dev.architectury.loom" version "1.10.+" apply false
     id "com.matthewprenger.cursegradle" version "1.4.0"
     id "com.modrinth.minotaur" version "2.+"
-    id "com.github.johnrengelman.shadow" version "7.1.2" apply false
+    id 'com.gradleup.shadow' version '8.3.6' apply false
 }
 
 architectury {
     minecraft = rootProject.minecraft_version
 }
 
+allprojects {
+    apply plugin: "java"
+    apply plugin: "architectury-plugin"
+    apply plugin: "maven-publish"
+
+    base.archivesName = mod_id
+    version = mod_version
+    group = mod_group_id
+
+    repositories {
+
+        mavenLocal()
+        mavenCentral()
+
+        // Flat directory for local mods
+        flatDir { dirs "mods" }
+
+        // Our publishing repo
+        if (!maven_backup.toBoolean()) maven { url = "https://registry.somethingcatchy.net/repository/maven-releases/" }
+
+        maven { url = "https://maven.parchmentmc.org" }
+
+        maven {
+            url = "https://www.cursemaven.com"
+            allowInsecureProtocol = true
+        }
+        maven { url = "https://api.modrinth.com/maven" }
+        maven { url = "https://mvn.devos.one/snapshots/" } // registrate_fabric & registrate
+        maven { url = "https://mvn.devos.one/releases" } // Porting Lib Releases
+        maven { url = "https://maven.shedaniel.me/" } // Cloth Config
+
+        // Required for Create
+        maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
+        maven { url = "https://maven.tterrag.com" } // Registrate
+        maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/" } // Forge Config API Port
+        maven { url = "https://squiddev.cc/maven" } // CC: Tweaked
+        maven { url = 'https://maven.ladysnake.org/releases' } // Unknown
+        maven { url = "https://maven.shedaniel.me" } // unknown
+        maven { url = "https://maven.blamejared.com/" } // JEI
+        maven { url = "https://modmaven.dev" } // Botania & FALLBACK for JEI
+        maven { url = "https://maven.teamresourceful.com/repository/maven-public/" } // Chipped
+        maven { url = 'https://maven.minecraftforge.net/' } // Terrablender
+        maven { url = "https://maven.terraformersmc.com/" } // EMI
+        maven { url = "https://maven.terraformersmc.com/releases" }
+
+        maven { // Reach Entity Attributes
+            url = "https://maven.jamieswhiteshirt.com/libs-release"
+            content { includeGroup("com.jamieswhiteshirt") }
+        }
+
+        maven { // Geckolib
+            url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+            content {
+                includeGroupByRegex("software\\.bernie.*")
+                includeGroup("com.eliotlash.mclib")
+            }
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = "UTF-8"
+        options.release = 17
+    }
+
+    java {
+        withSourcesJar()
+    }
+}
+
 subprojects {
     apply plugin: "dev.architectury.loom"
     apply plugin: "com.matthewprenger.cursegradle"
     apply plugin: "com.modrinth.minotaur"
-    apply plugin: "com.github.johnrengelman.shadow"
+    apply plugin: "com.gradleup.shadow"
+    apply plugin: "maven-publish"
 
 
     loom {
@@ -25,10 +95,26 @@ subprojects {
         minecraft "com.mojang:minecraft:${minecraft_version}"
         // The following line declares the mojmap mappings, you may use other mappings as well
         mappings loom.layered() {
-            it.officialMojangMappings {
-                setNameSyntheticMembers(false)
+            officialMojangMappings()
+            parchment("org.parchmentmc.data:parchment-${parchment_version}")
+        }
+    }
+
+    publishing {
+        repositories {
+            mavenLocal()
+
+            def nexusToken = providers.environmentVariable("NEXUS_TOKEN").get()
+            def nexusUser = providers.environmentVariable("NEXUS_USER").get()
+            if (nexusToken && nexusUser) {
+                maven {
+                    url = uri("https://registry.somethingcatchy.net/repository/maven-releases/")
+                    credentials {
+                        username = nexusUser
+                        password = nexusToken
+                    }
+                }
             }
-            it.parchment("org.parchmentmc.data:parchment-${parchment_version}")
         }
     }
 
@@ -38,24 +124,137 @@ subprojects {
     var changelogFile = rootProject.file("changelog.md")
     var changelogText = changelogFile.exists() ? changelogFile.text : ""
 
+    var versions = listGameVersions(minecraft_min_version, minecraft_version)
+
     if (env.MODRINTH_TOKEN) {
         modrinth {
             projectId = "${modrinth_id}"
             uploadFile = tasks.remapJar
             additionalFiles.add(tasks.remapSourcesJar)
-            gameVersions = [minecraft_version]
+            gameVersions = versions
             loaders = [modLoader]
             changelog = changelogText
-            versionNumber = mod_version+'-'+modLoader
+            versionNumber = mod_version +"-"+ modLoader
+            versionType = release_type
 
             if (modLoader == "fabric") {
                 dependencies {
                     required.project "fabric-api"
                     required.project "moonlight"
+                    optional.project("another-furniture")
+                    optional.project("architects-palette-fabric")
+//                    optional.project("backpacked")
+                    optional.project("guitas-woodworks")
+                    optional.project("building-but-better")
+                    optional.project("camp-chair")
+                    optional.project("chipped")
+                    optional.project("clutter")
+//                    optional.project("corail-pillar")
+                    optional.project("create-fabric")
+                    optional.project("dawn-of-time")
+                    optional.project("decorative-blocks")
+                    optional.project("dramatic-doors")
+                    optional.project("exlines-awnings")
+                    optional.project("bark-carpets")
+                    optional.project("excessive-building")
+                    optional.project("farmers-delight-fabric")
+                    optional.project("farmers-delight-refabricated")
+                    optional.project("friends-and-foes")
+                    optional.project("furnish")
+                    optional.project("handcrafted")
+                    optional.project("hearth-and-home")
+                    optional.project("infinitybuttons")
+                    optional.project("lightmans-currency")
+                    optional.project("macaws-bridges")
+                    optional.project("macaws-doors")
+                    optional.project("macaws-fences-and-walls")
+                    optional.project("macaws-furniture")
+                    optional.project("macaws-lights-and-lamps")
+                    optional.project("macaws-paths-and-pavings")
+                    optional.project("macaws-roofs")
+                    optional.project("macaws-trapdoors")
+                    optional.project("macaws-windows")
+//                    optional.project("mighty-mail-fabric")
+                    optional.project("missing-wilds")
+                    optional.project("more-beautiful-torches")
+                    optional.project("more-crafting-tables-lieonlion")
+                    optional.project("quark")
+                    optional.project("regions-unexplored")
+//                    optional.project("the-twilight-forest") //NOT AVAILABLE
+                    optional.project("table-top-craft")
+                    optional.project("twigs")
+                    optional.project("valhelsia-furniture")
+                    optional.project("variant-vanilla-blocks")
+                    optional.project("villagersplus")
+                    optional.project("wooden-hoppers")
                 }
             } else {
                 dependencies {
                     required.project "moonlight"
+                    optional.project("sawmill")
+                    optional.project("absent-by-design")
+                    optional.project("another-furniture")
+                    optional.project("architects-palette")
+                    optional.project("bibliocraft-legacy")
+                    optional.project("boatload")
+                    optional.project("guitas-woodworks")
+                    optional.project("buildersaddition")
+                    optional.project("building-but-better")
+                    optional.project("camp-chair")
+                    optional.project("chipped")
+//                    optional.project("corail-pillar")
+                    optional.project("create")
+                    optional.project("decorative-blocks")
+//                    optional.project("decoration-delight")
+//                    optional.project("domum-ornamentum")
+                    optional.project("dramatic-doors")
+                    optional.project("bark-carpets")
+                    optional.project("excessive-building")
+                    optional.project("farmers-delight")
+                    optional.project("friends-and-foes-forge")
+                    optional.project("functional-storage")
+                    optional.project("furnish")
+                    optional.project("handcrafted")
+                    optional.project("hearth-and-home")
+                    optional.project("infinitybuttons")
+                    optional.project("just-a-raft-mod")
+                    optional.project("lightmans-currency")
+                    optional.project("macaws-bridges")
+                    optional.project("macaws-doors")
+                    optional.project("macaws-fences-and-walls")
+                    optional.project("macaws-furniture")
+                    optional.project("macaws-lights-and-lamps")
+                    optional.project("macaws-paths-and-pavings")
+                    optional.project("macaws-roofs")
+                    optional.project("macaws-trapdoors")
+                    optional.project("macaws-windows")
+//                    optional.project("mighty-mail")
+                    optional.project("missing-wilds")
+                    optional.project("more-beautiful-torches")
+                    optional.project("more-chest-variants-lieonlion")
+//                    optional.project("more-crafting-tables-for-forge")
+                    optional.project("more-crafting-tables-lieonlion")
+                    optional.project("mosaic-carpentry")
+//                    optional.project("pokecube-aoi")
+                    optional.project("premium-wood")
+//                    optional.project("productivebees")
+                    optional.project("quark")
+                    optional.project("redeco")
+                    optional.project("regions-unexplored")
+                    optional.project("storage-drawers")
+                    optional.project("timber-frames")
+                    optional.project("the-graveyard-forge")
+                    optional.project("the-twilight-forest")
+                    optional.project("table-top-craft")
+                    optional.project("tropicraft")
+                    optional.project("twigs")
+                    optional.project("valhelsia-furniture")
+                    optional.project("variant-crafting-tables")
+                    optional.project("variant-vanilla-blocks")
+                    optional.project("villagersplus")
+                    optional.project("woodworks")
+                    optional.project("workshop-for-handsome-adventurer")
+                    optional.project("xercamod")
                 }
             }
         }
@@ -74,7 +273,10 @@ subprojects {
 
                 mainArtifact(tasks.remapJar) {
                     if (modLoader == "fabric") {
-                        displayName = mod_id +"-"+ mod_version + "-fabric"
+                        displayName = mod_id + "-" + mod_version + "-fabric"
+                    }
+                    else {
+                        displayName = mod_id + "-" + mod_version + "-forge"
                     }
                 }
 
@@ -197,7 +399,6 @@ subprojects {
                         optionalDependency("variant-crafting-tables")
                         optionalDependency("variant-vanilla-blocks")
                         optionalDependency("villagersplus-forge")
-                        optionalDependency("woodster")
                         optionalDependency("woodworks")
                         optionalDependency("workshop-for-handsome-adventurer")
                         optionalDependency("xercamod")
@@ -206,80 +407,115 @@ subprojects {
             }
         }
     }
+
 }
 
-allprojects {
-    apply plugin: "java"
-    apply plugin: "architectury-plugin"
-    apply plugin: "maven-publish"
+// --- Utils
+static def listGameVersions(String minVersion, String maxVersion) {
+// minVersion like "1.20", maxVersion like "1.20.4"
+    def versions = []
+    versions << minVersion
+    int endPatch = Integer.parseInt(maxVersion.split('\\.')[2])
+    for (int i = 1; i <= endPatch; i++) {
+        versions << "${minVersion}.${i}"
+    }
+    return versions
+}
 
-    archivesBaseName = rootProject.mod_id
-    version = rootProject.mod_version
-    group = rootProject.maven_group
+ext {
+    var usesMavenLocalML = System.getenv().MY_PC == "1"
+    print "isMyPc: $usesMavenLocalML\n"
+    replaceProperties = [
+            minecraft_version    : minecraft_version,
+            minecraft_min_version: minecraft_min_version,
+            minecraft_max_version: minecraft_max_version,
+            pack_format_number   : pack_format_number,
 
-    repositories {
+            mod_id               : mod_id,
+            mod_name             : mod_name,
+            mod_version          : mod_version,
+            mod_license          : mod_license,
+            mod_authors          : mod_authors,
+            mod_description      : mod_description,
+            mod_credits          : mod_credits,
+            mod_homepage         : mod_homepage,
+            mod_github           : mod_github,
 
-        mavenLocal()
+            forge_version        : forge_version,
+            forge_version_range  : forge_version_range,
+            loader_version_range : loader_version_range,
 
-        flatDir {
-            dirs 'mods'
+            moonlight_required_version: moonlight_required_version
+    ]
+}
+
+tasks.register('buildAndPublishAll') {
+    dependsOn ':clean'
+    dependsOn ':common:clean'
+    dependsOn ':fabric:clean'
+    dependsOn ':forge:clean'
+    dependsOn ':build'
+    dependsOn ':forge:curseforge'
+    dependsOn ':forge:modrinth'
+    dependsOn ':fabric:curseforge'
+    dependsOn ':fabric:modrinth'
+    dependsOn ':publish'
+    finalizedBy 'gitTag'
+
+    group = 'build'
+    description = 'Runs clean, build, and publish forge and fabric'
+}
+
+tasks.register('gitTag') {
+    group = 'release'
+    description = 'Create and push git tag from project version'
+
+    doLast {
+        def execOps = services.get(ExecOperations)
+        def tag = project.version.toString()
+
+        // check if tag already exists
+        def stdout = new ByteArrayOutputStream()
+        execOps.exec {
+            commandLine 'git', 'tag', '-l', tag
+            standardOutput = stdout
         }
 
-        // Add repositories to retrieve artifacts from in here.
-        // You should only use this when depending on other mods because
-        // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-        // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-        // for more information about repositories.
-        maven { url = "https://maven.parchmentmc.org" }
+        if (!stdout.toString().trim().isEmpty()) {
+            logger.warn("Git tag '${tag}' already exists")
+        } else {
 
-        maven {
-            url = "https://www.cursemaven.com"
-            allowInsecureProtocol = true
+            // create annotated tag
+            execOps.exec {
+                commandLine 'git', 'tag', '-a', tag, '-m', "Release ${tag}"
+            }
+
+            // push tag
+            execOps.exec {
+                commandLine 'git', 'push', 'origin', tag
+            }
         }
-        maven { url = "https://api.modrinth.com/maven" }
-
-        maven { url = "https://mvn.devos.one/snapshots/" } // registrate_fabric & registrate
-
-        maven { url = "https://mvn.devos.one/releases" } // Porting Lib Releases
-
-        maven { url = "https://maven.shedaniel.me/" } // Cloth Config
-
-        // Required for Create
-        maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
-
-        maven { url = "https://maven.tterrag.com" } // Registrate
-
-        maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/" } // Forge Config API Port
-
-        maven { // Reach Entity Attributes
-            url = "https://maven.jamieswhiteshirt.com/libs-release"
-            content { includeGroup("com.jamieswhiteshirt") }
-        }
-        maven { url = "https://squiddev.cc/maven" } // CC: Tweaked
-
-        maven { url = 'https://maven.ladysnake.org/releases' } // Unknown
-
-        maven { url = "https://maven.shedaniel.me" } // unknown
-
-        maven { url = "https://maven.blamejared.com/" } // JEI
-
-        maven { url = "https://modmaven.dev" } // Botania & FALLBACK for JEI
-
-        maven { url = "https://maven.teamresourceful.com/repository/maven-public/" } // Chipped
-
-        maven { url = 'https://maven.minecraftforge.net/' } // Terrablender
-
-        maven { url = "https://maven.terraformersmc.com/" } // EMI
-
-        maven { url = "https://maven.terraformersmc.com/releases" }
     }
+}
 
-    tasks.withType(JavaCompile).configureEach {
-        options.encoding = "UTF-8"
-        options.release = 17
-    }
+tasks.register('cleanLogs', Delete) {
+    group "build"
+    description "Delete logs"
 
-    java {
-        withSourcesJar()
-    }
+    // Logs
+    delete fileTree(dir: "$rootDir/forge/run/logs", include: "**/*.gz")
+    delete fileTree(dir: "$rootDir/fabric/run/logs", include: "**/*.gz")
+}
+
+tasks.register('cleanFolders', Delete) {
+    group "build"
+    description "Clean logs & Delete folders of Debug"
+
+    // Logs
+    delete fileTree(dir: "$rootDir/forge/run/logs", include: "**/*.gz")
+    delete fileTree(dir: "$rootDir/fabric/run/logs", include: "**/*.gz")
+
+    // Debug
+    delete "$rootDir/forge/run/debug"
+    delete "$rootDir/fabric/run/debug"
 }

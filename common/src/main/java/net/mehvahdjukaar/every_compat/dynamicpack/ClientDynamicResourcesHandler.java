@@ -2,15 +2,15 @@ package net.mehvahdjukaar.every_compat.dynamicpack;
 
 import com.google.common.base.Stopwatch;
 import net.mehvahdjukaar.every_compat.EveryCompat;
+import net.mehvahdjukaar.every_compat.api.PaletteStrategies;
 import net.mehvahdjukaar.every_compat.configs.ECConfigs;
-import net.mehvahdjukaar.every_compat.misc.SpriteHelper;
+import net.mehvahdjukaar.every_compat.misc.CompatSpritesHelper;
 import net.mehvahdjukaar.moonlight.api.events.AfterLanguageLoadEvent;
 import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
 import net.mehvahdjukaar.moonlight.api.resources.RPUtils;
 import net.mehvahdjukaar.moonlight.api.resources.pack.DynClientResourcesGenerator;
 import net.mehvahdjukaar.moonlight.api.resources.pack.DynamicTexturePack;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceGenTask;
-import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceSink;
 import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
 import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
 import net.mehvahdjukaar.moonlight.api.set.BlockType;
@@ -52,11 +52,6 @@ public class ClientDynamicResourcesHandler extends DynClientResourcesGenerator {
     }
 
     @Override
-    public boolean dependsOnLoadedPacks() {
-        return ECConfigs.SPEC == null || ECConfigs.DEPEND_ON_PACKS.get();
-    }
-
-    @Override
     public void addDynamicTranslations(AfterLanguageLoadEvent lang) {
         EveryCompat.forAllModules(m -> {
             m.addTranslations(this, lang);
@@ -65,65 +60,37 @@ public class ClientDynamicResourcesHandler extends DynClientResourcesGenerator {
 
     @Override
     public void regenerateDynamicAssets(Consumer<ResourceGenTask> executor) {
+        if (!firstInit) {
+            CompatSpritesHelper.addHardcodedSprites();
+            firstInit = true;
+        }
+        if (!ECConfigs.GENERATE_DYNAMIC_CLIENT.get()) return;
+
+        PaletteStrategies.clearCache();
+
+        this.dynamicPack.setGenerateDebugResources(PlatHelper.isDev() || ECConfigs.DEBUG_RESOURCES.get());
+
         List<ResourceGenTask> tasks = new ArrayList<>();
         EveryCompat.forAllModules(m -> m.addDynamicClientResources(tasks::add));
 
         int minBatches = Runtime.getRuntime().availableProcessors();
         int maxBatches = tasks.size() / Runtime.getRuntime().availableProcessors();
-        int batchSize =  Math.max(minBatches, maxBatches);
-
-//        EveryCompat.LOGGER.info("Dynamic resources generation tasks: {} in batches of: {}", tasks.size(), batchSize);
-//        EveryCompat.LOGGER.info("Dynamic resources generation threads: {} ", tasks.size() / batchSize);
+        int batchSize = Math.max(minBatches, maxBatches);
 
         //submit tasks in batches. to do so split that list in sizes of that batchSize then submit a task to the executor where that list is iterated and executed
-        EveryCompat.LOGGER.info("Dynamic resources generation tasks: {} in batches of: {}", tasks.size(), batchSize);
+        EveryCompat.LOGGER.info("Starting dynamic resources generation tasks: {} in batches of {}", tasks.size(), batchSize);
         for (int i = 0; i < tasks.size(); i += batchSize) {
             int end = Math.min(i + batchSize, tasks.size());
             var subList = tasks.subList(i, end);
             executor.accept((resourceManager, resourceSink) -> {
                 for (ResourceGenTask subtask : subList) {
-                    subtask.accept(resourceManager, resourceSink);
+                    try {
+                        subtask.accept(resourceManager, resourceSink);
+                    } catch (Throwable e) {
+                        EveryCompat.LOGGER.error("Error while generating dynamic resource for task {}", subtask, e);
+                    }
                 }
             });
         }
-
     }
-
-//    private static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
-//
-//    @Override
-//    protected @NotNull ExecutorService getExecutors() {
-//        return EXECUTOR_SERVICE;
-//    }
-
-    @Override
-    public void regenerateDynamicAssets(ResourceManager manager) {
-        if (!firstInit) {
-            SpriteHelper.addHardcodedSprites();
-            firstInit = true;
-        }
-        if (!ECConfigs.GENERATE_DYNAMIC_CLIENT.get())return;
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        this.dynamicPack.setGenerateDebugResources(PlatHelper.isDev() || ECConfigs.DEBUG_RESOURCES.get());
-        super.regenerateDynamicAssets(manager);
-
-        EveryCompat.LOGGER.info("Dynamic client assets generation took: {}", stopwatch.stop().toString());
-        this.paletteCache.clear();
-    }
-
-    //needs to be thread safe
-    private final Map<BlockType, Palette> paletteCache = new ConcurrentHashMap<>();
-
-    public Palette getCachedBaseBlockTexturePalette(ResourceManager manager, BlockType baseType) {
-        return paletteCache.computeIfAbsent(baseType, k -> {
-            try (TextureImage oakPlanksTexture = TextureImage.open(manager,
-                    RPUtils.findFirstBlockTextureLocation(manager, (Block) baseType.mainChild()))) {
-                return Palette.fromImage(oakPlanksTexture);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-    }
-
 }

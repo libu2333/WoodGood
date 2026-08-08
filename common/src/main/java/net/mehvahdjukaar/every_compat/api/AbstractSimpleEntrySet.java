@@ -1,49 +1,39 @@
 package net.mehvahdjukaar.every_compat.api;
 
 import com.google.common.base.Suppliers;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.gson.JsonObject;
 import com.mojang.datafixers.util.Pair;
 import net.mehvahdjukaar.every_compat.EveryCompat;
 import net.mehvahdjukaar.every_compat.configs.ModEntriesConfigs;
 import net.mehvahdjukaar.every_compat.dynamicpack.ClientDynamicResourcesHandler;
 import net.mehvahdjukaar.every_compat.misc.ColoringUtils;
 import net.mehvahdjukaar.every_compat.misc.ResourcesUtils;
-import net.mehvahdjukaar.every_compat.misc.SpriteHelper;
+import net.mehvahdjukaar.every_compat.misc.TextureGenHelper;
+import net.mehvahdjukaar.every_compat.misc.UtilityTag;
 import net.mehvahdjukaar.moonlight.api.platform.ClientHelper;
 import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
 import net.mehvahdjukaar.moonlight.api.platform.RegHelper;
 import net.mehvahdjukaar.moonlight.api.resources.BlockTypeResTransformer;
-import net.mehvahdjukaar.moonlight.api.resources.RPUtils;
-import net.mehvahdjukaar.moonlight.api.resources.ResType;
 import net.mehvahdjukaar.moonlight.api.resources.SimpleTagBuilder;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceSink;
 import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
-import net.mehvahdjukaar.moonlight.api.resources.textures.Respriter;
-import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
 import net.mehvahdjukaar.moonlight.api.set.BlockSetAPI;
 import net.mehvahdjukaar.moonlight.api.set.BlockType;
-import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
+import net.mehvahdjukaar.moonlight.api.set.wood.VanillaWoodChildKeys;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
-import net.mehvahdjukaar.moonlight.api.util.math.colors.RGBColor;
 import net.mehvahdjukaar.moonlight.core.misc.McMetaFile;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.InputStream;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -52,13 +42,13 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static net.mehvahdjukaar.every_compat.common_classes.TagUtility.addTagToAllBlocks;
+import static net.mehvahdjukaar.every_compat.configs.ECConfigs.NO_MOD_CREATIVE_TAB;
+import static net.mehvahdjukaar.every_compat.misc.UtilityTag.addTagToAllBlocks;
+import static net.mehvahdjukaar.every_compat.misc.UtilityTag.platformTag;
 
 //contrary to popular belief this class is indeed not simple. Its usage however is
-@SuppressWarnings({"unused", "removal"})
+@SuppressWarnings({"unused"})
 public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Block, I extends Item> implements EntrySet<T> {
-
-    public static int totalChildren = 0;
 
     protected static final ResourceLocation NO_TAB_MARKER = new ResourceLocation("none");
 
@@ -83,7 +73,6 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
     protected final Map<ResourceLocation, Set<ResourceKey<?>>> tags = new HashMap<>();
     protected final Set<Supplier<ResourceLocation>> recipeLocations = new HashSet<>();
     protected final Set<TextureInfo> textures = new HashSet<>();
-    protected final BiFunction<T, ResourceManager, Pair<List<Palette>, @Nullable McMetaFile>> paletteSupplier;
     @Nullable
     protected final Consumer<BlockTypeResTransformer<T>> extraModelTransform;
 
@@ -96,7 +85,7 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
                                      Supplier<T> baseType,
                                      Supplier<ResourceKey<CreativeModeTab>> tab,
                                      TabAddMode tabMode,
-                                     BiFunction<T, ResourceManager, Pair<List<Palette>, @Nullable McMetaFile>> paletteSupplier,
+                                     BiFunction<T, ResourceManager, PaletteStrategy.PaletteAndAnimation> paletteSupplier,
                                      @Nullable Consumer<BlockTypeResTransformer<T>> extraTransform,
                                      boolean mergePalette, boolean copyTint,
                                      Predicate<T> condition) {
@@ -110,7 +99,6 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
         this.copyTint = copyTint;
 
         this.extraModelTransform = extraTransform;
-        this.paletteSupplier = paletteSupplier;
         this.mergePalette = mergePalette;
 
         if (this.prefix != null) {
@@ -125,7 +113,7 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
         this.condition = condition;
 
         if (tab == null && PlatHelper.isDev()) {
-            throw new UnsupportedOperationException("Creative tab cant be null. Found null one for entry set: " + Utils.getID(this.getBaseType()).toString() );
+            throw new UnsupportedOperationException("Creative tab cant be null. Found null one for entry set: " + Utils.getID(this.getBaseType()).toString());
         }
     }
 
@@ -197,7 +185,7 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
             return;
         }
         ResourceKey<CreativeModeTab> tab = this.tab.get();
-        if (tab.location().equals(NO_TAB_MARKER)) {
+        if (tab.location().equals(NO_TAB_MARKER) || NO_MOD_CREATIVE_TAB.get()) {
             return;
         }
         //verify tab
@@ -218,7 +206,7 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
             }
         } else if (tabMode == TabAddMode.AFTER_SAME_TYPE) {
             var reg = BlockSetAPI.getBlockSet(type);
-            String childKey = getChildKey(module);
+            String childKey = makeChildKey(module);
             Class<T> typeClass = this.getTypeClass();
             for (var e : items.entrySet()) {
                 var item = e.getValue();
@@ -233,7 +221,7 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
     }
 
     @Override
-    public void generateTags(SimpleModule module,  ResourceManager manager, ResourceSink sink) {
+    public void generateTags(SimpleModule module, ResourceManager manager, ResourceSink sink) {
         if (!tags.isEmpty()) {
             for (var tb : tags.entrySet()) {
                 SimpleTagBuilder builder = SimpleTagBuilder.of(tb.getKey());
@@ -249,13 +237,36 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
         }
 
         // Adding tag to a specific WoodType of all generated blocks
-        addTagToAllBlocks(blocks, "petrified", "sullysmod", BlockTags.MINEABLE_WITH_PICKAXE,
-                true, false, sink);
+        /// Sully's Mod
+        addTagToAllBlocks(blocks, "petrified", "sullysmod",
+                BlockTags.MINEABLE_WITH_PICKAXE.location().toString(), true, false, sink);
 
+        /// Soulful Nether
         String regEx = "\\w+_(log|planks|beehive|boards|sanded_wood|beam|parquet|trim|bookshelf|window|drawer|table|bookshelf|shelf|table|support|cabinet|board_stairs|board_slab|boards)";
-        addTagToAllBlocks(blocks , "fright", "soulfulnether", BlockTags.SOUL_FIRE_BASE_BLOCKS,
-                true, false, sink, regEx);
+        addTagToAllBlocks(blocks, "fright", "soulfulnether",
+                BlockTags.SOUL_FIRE_BASE_BLOCKS.location().toString(), true, false, sink, regEx);
 
+        /// Regions Unexplored
+        addTagToAllBlocks(blocks, "(brimwood|cobalt|dead|yellow_bioshroom)",
+                "regions_unexplored", BlockTags.STRIDER_WARM_BLOCKS.location().toString(),
+                true, false, sink);
+        addTagToAllBlocks(blocks, "(brimwood|cobalt|dead|yellow_bioshroom)",
+                "regions_unexplored", "minecraft:non_flammable_wood",
+                false, true, sink);
+
+        /// Botania
+        if (PlatHelper.isModLoaded("botania")) {
+            String glassRegEx = "\\w+_(?:window|glass)";
+            String glassPaneRegEx = "\\w+_(?:window|glass)_pane";
+            addTagToAllBlocks(blocks, ".*", "", UtilityTag.GLASS_TAG.toString(),
+                    true, true, sink, glassRegEx);
+            addTagToAllBlocks(blocks, ".*", "", UtilityTag.GLASS_PANE_TAG.toString(),
+                    true, true, sink, glassPaneRegEx);
+        }
+
+        /// Ladders
+        addTagToAllBlocks(blocks, "", "", platformTag("ladders").toString(),
+                true, true, sink, "\\w+_ladder");
     }
 
     public Map<T, ?> getDefaultEntries() {
@@ -263,7 +274,7 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
     }
 
     @Override
-    public void generateRecipes(SimpleModule module,ResourceManager manager, ResourceSink sink) {
+    public void generateRecipes(SimpleModule module, ResourceManager manager, ResourceSink sink) {
         int i = 0;
         for (var r : this.recipeLocations) {
             var res = r.get();
@@ -275,210 +286,16 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
         }
     }
 
-    // i have no fucking clue whats going on here
     @Override
-    public void generateTextures(SimpleModule module, ResourceManager manager,  ResourceSink sink) {
+    public void generateTextures(SimpleModule module, ResourceManager manager, ResourceSink sink) {
         if (textures.isEmpty()) return;
-
-        List<TextureImage> images = new ArrayList<>();
         try {
-            // Oak Planks Palette
-            Palette oakPlanksPalette = ClientDynamicResourcesHandler.getInstance()
-                    .getCachedBaseBlockTexturePalette(manager, baseType.get());
-
-            Map<ResourceLocation, Respriter> respriters = new HashMap<>();
-            Map<ResourceLocation, TextureImage> partialRespriters = new HashMap<>();
-            Palette globalPalette = Palette.ofColors(new ArrayList<RGBColor>());
-
-            Multimap<ResourceLocation, TextureInfo> infoPerTextures = ArrayListMultimap.create();
-
-            /// Adding multiple textures from one block into Respriter without/with mask & infoPerTextures
-            for (var textureInfo : textures) {
-                ResourceLocation textureId = textureInfo.texture();
-
-                try {
-                    ResourceLocation maskId = textureInfo.mask();
-                    TextureImage main = TextureImage.open(manager, textureId);
-                    main.getMetadata();
-
-                    infoPerTextures.put(textureId, textureInfo);
-
-                    if (textureInfo.copyTexture()) {
-                        respriters.put(textureId, Respriter.ofPalette(main, List.of(Palette.ofColors(List.of(new RGBColor(0))))));
-                    } else {
-                        images.add(main);
-
-                        if (maskId != null) {
-                            TextureImage mask;
-                            if (textureInfo.autoMask()) {
-                                if (mergePalette) {
-                                    globalPalette.addAll(oakPlanksPalette);
-                                    partialRespriters.put(textureId, main);
-                                } else {
-                                    respriters.put(textureId, Respriter.ofPalette(main, oakPlanksPalette));
-                                }
-                            } else {
-                                mask = TextureImage.open(manager, maskId);
-                                if (mergePalette) {
-                                    globalPalette.addAll(Palette.fromImage(main, mask, 0));
-                                    partialRespriters.put(textureId, main);
-                                } else {
-                                    respriters.put(textureId, Respriter.masked(main, mask));
-                                }
-                            }
-
-                        } else {
-                            if (mergePalette) {
-                                globalPalette.addAll(Palette.fromImage(main, null, 0));
-                                partialRespriters.put(textureId, main);
-                            } else {
-                                respriters.put(textureId, Respriter.of(main));
-                            }
-                        }
-                    }
-                } catch (UnsupportedOperationException e) {
-                    EveryCompat.LOGGER.error("Could not generate textures for {}: {}", textureInfo, e);
-                } catch (Exception e) {
-                    if (PlatHelper.isDev()) throw new RuntimeException(e);
-                    EveryCompat.LOGGER.error("Failed to read block texture at {}: {}", textureInfo, e);
-                }
-            }
-
-            for (var e : partialRespriters.entrySet()) {
-                respriters.put(e.getKey(), Respriter.ofPalette(e.getValue(), globalPalette));
-            }
-            /// Swapping out the old palettes of the texture with new plattes
-            for (var entry : getDefaultEntries().entrySet()) {
-                var block = entry.getValue();
-                T blockType = entry.getKey();
-                // skips disabled ones
-                // actually we dont otherwise we get missign texture log spam. TODO: replace models with empty dummy instead
-                // if (!ModConfigs.isEntryEnabled(w, b)) continue;
-                ResourceLocation blockId = Utils.getID(block);
-
-                // return the texture of: WoodType: Planks, StoneType: stone, LeavesType: leaves
-                var pal = paletteSupplier.apply(blockType, manager);
-                McMetaFile targetAnimation = pal.getSecond();
-                List<Palette> targetPalette = pal.getFirst();
-
-                if (targetPalette == null) {
-                    EveryCompat.LOGGER.error("Could not get texture palette for block {} because the targetPalette is null", block);
-                    continue;
-                }
-
-                //sanity check to verity that palette isn't changed. can be removed
-                int oldSize = targetPalette.get(0).size();
-
-                /// Creating new Path to add the new textures via the resources
-                for (var re : respriters.entrySet()) {
-                    if (oldSize != targetPalette.get(0).size()) {
-                        throw new RuntimeException("This should not happen");
-                    }
-                    ResourceLocation oldTextureId = re.getKey();
-                    String oldPath = oldTextureId.getPath();
-
-                    // boatload's texture path has 2 folder
-                    String newPath = (oldPath.startsWith("entity/") && module.modId.equals("boatload"))
-                            ? BlockTypeResTransformer.replaceFullGenericType(oldPath, blockType, blockId, baseType.get().getTypeName(), null, 2)
-                            // Default
-                            : BlockTypeResTransformer.replaceTypeNoNamespace(oldPath, blockType, blockId, baseType.get().getTypeName());
-
-                    String newId = "";
-
-                    boolean isOnAtlas = true;
-
-                    /// Adding the textures to the resource
-                    for (var info : infoPerTextures.get(oldTextureId)) {
-                        if (info != null) {
-                            if (Objects.nonNull(info.customTexturePath())) {
-                                oldPath = info.customTexturePath();
-                                if (oldPath.contains("SHORTENEDID")) { //REASON: Take a look at SmidgeonOBlissModule for the details
-                                    // SHORTENEDID-[old]-[new]
-                                    String oldShortenedId = oldPath.split("-")[1];
-                                    String newShortenedId = oldPath.split("-")[2];
-                                    newId = newPath.replace(oldShortenedId, newShortenedId);
-                                }
-                                else {
-                                    newId = blockId.getNamespace() +":"+ BlockTypeResTransformer.replaceTypeNoNamespace(oldPath, blockType, blockId, baseType.get().getTypeName());
-                                }
-                            }
-                            else if (info.keepNamespace()) newId = oldTextureId.withPath(newPath).toString();
-                            else
-                                newId = new ResourceLocation(blockId.getNamespace(), newPath).toString();
-
-                            if (newId.isEmpty()) {
-                                EveryCompat.LOGGER.error("The path of new texture is empty for: {}", info.texture());
-                                continue;
-                            }
-
-                            isOnAtlas = info.onAtlas();
-
-                            /// TEMP: do not remove this until the mcmeta problem is fixed.
-                            if (info.copyMCMETA()) {
-                                ResourceLocation mcmetaLoc = ResType.MCMETA.getPath(oldTextureId);
-                                Optional<Resource> getMCMETA = manager.getResource(mcmetaLoc);
-
-                                if (getMCMETA.isPresent()) {
-                                    InputStream mcmetaStream = getMCMETA.get().open();
-                                    JsonObject mcmetaFile = RPUtils.deserializeJson(mcmetaStream);
-
-                                    // Adding to the resources next to newtextures
-                                    sink.addJson(ResourceLocation.tryParse(newId), mcmetaFile, ResType.MCMETA);
-                                    mcmetaStream.close();
-                                } else
-                                    EveryCompat.LOGGER.error("The MCMETA file may no longer existing, check @ {}", mcmetaLoc);
-                            }
-                        }
-
-                        Respriter respriter = re.getValue();
-
-                        Supplier<TextureImage> textureSupplier = () -> respriter.recolorWithAnimation(targetPalette, targetAnimation);
-                        textureSupplier = postProcessTexture(blockType, newId, manager, textureSupplier);
-
-                        sink.addTextureIfNotPresent(manager, newId, textureSupplier, isOnAtlas);
-                    }
-                }
-            }
-
+            TextureGenHelper.generateDefault(sink, manager, module.modId, textures, getBaseType(),
+                    mergePalette, this.getDefaultEntries());
         } catch (Exception e) {
-            EveryCompat.LOGGER.error("Could not generate the block texture for {}: {}",
-                    module == null ? "dummy" : module.modRes(this.getName()), e.getMessage());
-        } finally {
-            for (var t : images) {
-                t.close();
-            }
+            EveryCompat.LOGGER.error("Could not generate any block texture for entry set {}: {}",
+                    module == null ? "dummy" : module.modRes(this.getName()), e);
         }
-    }
-
-    //post process some textures.
-    public Supplier<TextureImage> postProcessTexture(T blockType, String newId, ResourceManager manager,
-                                                     Supplier<TextureImage> textureSupplier) {
-        if (blockType.getClass() == WoodType.class) {
-            var changed = SpriteHelper.maybePostProcessWoodTexture((WoodType) blockType, newId, manager, textureSupplier);
-            if (changed != null) {
-                return changed;
-            }
-        }
-        return textureSupplier;
-    }
-
-    private static Pair<List<Palette>, @Nullable McMetaFile> getPaletteFromMainChild(BlockType w, ResourceManager manager) {
-        var mainChild = w.mainChild();
-        Block mainWoodTypeBlock = null;
-        if (mainChild instanceof Block bb) mainWoodTypeBlock = bb;
-        else if (mainChild instanceof BlockItem bii) mainWoodTypeBlock = bii.getBlock();
-        if (mainWoodTypeBlock == null) {
-            throw new UnsupportedOperationException("You need to provide a palette supplier for non block main child");
-        }
-
-        try (TextureImage plankTexture = TextureImage.open(manager,
-                RPUtils.findFirstBlockTextureLocation(manager, mainWoodTypeBlock))) {
-            var targetPalette = Palette.fromAnimatedImage(plankTexture);
-            var animation = plankTexture.getMcMeta();
-            return Pair.of(targetPalette, animation);
-        } catch (Exception ignored) {
-        }
-        return Pair.of(null, null);
     }
 
 
@@ -491,7 +308,6 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
         protected final String prefix;
         protected Supplier<ResourceKey<CreativeModeTab>> tab = null;
         protected TabAddMode tabMode = TabAddMode.AFTER_SAME_TYPE;
-        protected BiFunction<T, ResourceManager, Pair<List<Palette>, @Nullable McMetaFile>> palette = AbstractSimpleEntrySet::getPaletteFromMainChild;
         protected final Map<ResourceLocation, Set<ResourceKey<?>>> tags = new HashMap<>();
         protected final Set<Supplier<ResourceLocation>> recipes = new HashSet<>();
         protected final Set<TextureInfo> textures = new HashSet<>();
@@ -500,6 +316,9 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
         protected Consumer<BlockTypeResTransformer<T>> extraModelTransform = null;
         protected Predicate<T> condition = w -> true;
         protected boolean copyTint = false;
+
+        @Deprecated(forRemoval = true)
+        protected BiFunction<T, ResourceManager, PaletteStrategy.PaletteAndAnimation> palette = null;
 
         protected Builder(Class<T> type, String name, @Nullable String prefix, Supplier<T> baseType) {
             this.baseType = baseType;
@@ -531,13 +350,13 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
             return (BL) this;
         }
 
-        // Exclude Leaves | Wood | Stone - exclusive with addCondition
+        // Exclude Leaves | Wood | Stone | Other BlockTypes - exclusive with addCondition
         public BL excludeBlockTypes(String regEx) {
             this.addCondition(blockType -> !blockType.getId().toString().matches(regEx));
             return (BL) this;
         }
 
-        // Exclude Leaves | Wood | Stone - exclusive with addCondition
+        // Exclude Leaves | Wood | Stone | Other BlockTypes - exclusive with addCondition
         public BL excludeBlockTypes(String modId, String... typeIds) {
             StringBuilder regexBuilder = new StringBuilder();
 
@@ -597,14 +416,23 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
             return (BL) this;
         }
 
-        public BL addTag(ResourceLocation location, ResourceKey<?> registry) {
+        public BL addTag(ResourceLocation tag, ResourceKey<?> registries) {
+            return this.addTag(tag, new ResourceKey[]{registries});
+        }
+
+        public BL addTag(ResourceLocation location, ResourceKey<?>... registries) {
             var s = this.tags.computeIfAbsent(location, b -> new HashSet<>());
-            s.add(registry);
+            s.addAll(List.of(registries));
             return (BL) this;
         }
 
-        public BL addTag(TagKey<?> tag, ResourceKey<?> registry) {
-            addTag(tag.location(), registry);
+        public BL addTag(TagKey<?> tag, ResourceKey<?> registries) {
+            return this.addTag(tag, new ResourceKey[]{registries});
+        }
+
+
+        public BL addTag(TagKey<?> tag, ResourceKey<?>... registries) {
+            addTag(tag.location(), registries);
             return (BL) this;
         }
 
@@ -630,9 +458,33 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
             return addTexture(TextureInfo.of(resourceLocation));
         }
 
+        public BL addTexture(ResourceLocation resourceLocation, PaletteStrategy palette) {
+            return addTexture(TextureInfo.of(resourceLocation)
+                    .setPalette(palette));
+        }
+
         public BL addTextureM(ResourceLocation textureLocation, ResourceLocation maskLocation) {
             return addTexture(TextureInfo.of(textureLocation)
                     .mask(maskLocation));
+        }
+
+        public BL addTextureM(ResourceLocation textureLocation, ResourceLocation maskLocation, ResourceLocation overlayLocation) {
+            return addTexture(TextureInfo.of(textureLocation)
+                    .mask(maskLocation)
+                    .overlay(overlayLocation));
+        }
+
+        public BL addTextureM(ResourceLocation textureLocation, ResourceLocation maskLocation, PaletteStrategy palette) {
+            return addTexture(TextureInfo.of(textureLocation)
+                    .mask(maskLocation)
+                    .setPalette(palette));
+        }
+
+        public BL addTextureM(ResourceLocation textureLocation, ResourceLocation maskLocation, ResourceLocation overlayLocation, PaletteStrategy palette) {
+            return addTexture(TextureInfo.of(textureLocation)
+                    .mask(maskLocation)
+                    .overlay(overlayLocation)
+                    .setPalette(palette));
         }
 
         /// Custom Texture Path is for placing the texture in the correct ResourceLocation
@@ -640,89 +492,90 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
             return addTexture(TextureInfo.of(textureLocation, customTexturePath));
         }
 
-        // adds a texture with automatic masking. Experimental
-        public BL addTextureAutoM(ResourceLocation textureLocation) {
-            return addTexture(TextureInfo.of(textureLocation)
-                    .autoMask());
+        public BL addTextureC(ResourceLocation textureLocation, PaletteStrategy palette, String customTexturePath) {
+            return addTexture(TextureInfo.of(textureLocation, customTexturePath).setPalette(palette));
         }
+
+        public BL addTextureMC(ResourceLocation textureLocation, ResourceLocation maskLocation, PaletteStrategy palette, String customTexturePath) {
+            return addTexture(TextureInfo.of(textureLocation, customTexturePath)
+                    .mask(maskLocation)
+                    .setPalette(palette));
+        }
+
+        /// Copy the texture as it is to EC's Resources
+        public BL copyTexture(ResourceLocation textureLocation) {
+            return addTexture(TextureInfo.of(textureLocation).copyTexture());
+        }
+
+        // adds a texture with automatic masking. Experimental
+//        public BL addTextureAutoM(ResourceLocation textureLocation) {
+//            return addTexture(TextureInfo.of(textureLocation)
+//                    .autoMask());
+//        }
 
         public BL useMergedPalette() {
             this.useMergedPalette = true;
             return (BL) this;
         }
 
+
         //by default, they all use planks palette
+        /// @deprecated Use {@link PaletteStrategies} to create a new strategies instead of setPalette()
+        @Deprecated(forRemoval = true)
         public BL setPalette(BiFunction<T, ResourceManager, Pair<List<Palette>, @Nullable McMetaFile>> paletteProvider) {
-            this.palette = paletteProvider;
+            this.palette = (t, m) -> {
+                var old = paletteProvider.apply(t, m);
+                return PaletteStrategy.PaletteAndAnimation.of(old.getFirst(), old.getSecond());
+            };
             return (BL) this;
         }
 
         //only works for oak type. Will fail if its used on leaves
+        /// @deprecated Look at javadoc: {@link Builder#createPaletteFromChild(Consumer, String, Predicate)}
+        @Deprecated(forRemoval = true)
         public BL createPaletteFromPlanks(Consumer<Palette> paletteTransform) {
-            return createPaletteFromChild(paletteTransform, "planks");
+            return createPaletteFromChild(paletteTransform, VanillaWoodChildKeys.PLANKS);
         }
 
+        /// @deprecated Look at javadoc: {@link Builder#createPaletteFromChild(Consumer, String, Predicate)}
+        @Deprecated(forRemoval = true)
         public BL createPaletteFromPlanks() {
             return createPaletteFromPlanks(p -> {
             });
         }
 
+        /// @deprecated Look at javadoc: {@link Builder#createPaletteFromChild(Consumer, String, Predicate)}
+        @Deprecated(forRemoval = true)
         public BL createPaletteFromChild(Consumer<Palette> paletteTransform, String childKey) {
             return createPaletteFromChild(paletteTransform, childKey, null);
         }
 
+        /// @deprecated Look at javadoc: {@link Builder#createPaletteFromChild(Consumer, String, Predicate)}
+        @Deprecated(forRemoval = true)
         public BL createPaletteFromChild(String childKey, Predicate<String> whichSide) {
             return createPaletteFromChild(p -> {
             }, childKey, whichSide);
         }
 
+        /// @deprecated Look at javadoc: {@link Builder#createPaletteFromChild(Consumer, String, Predicate)}
+        @Deprecated(forRemoval = true)
         public BL createPaletteFromChild(String childKey) {
             return createPaletteFromChild(p -> {
             }, childKey, null);
         }
 
+        /**
+         * @deprecated USE .addTexture() or .addTextureM(), the last parameter is PaletteStrategies<br>
+         * Take a look at {@link PaletteStrategies} & Look for the FIELD which can be used as an argument for the last
+         * parameter
+        **/
+        @Deprecated(forRemoval = true)
         public BL createPaletteFromChild(Consumer<Palette> paletteTransform, String childKey, Predicate<String> whichSide) {
-            return this.setPalette((blockType, m) -> makePaletteFromChild(paletteTransform, childKey, whichSide, blockType, m));
+            return this.setPalette((blockType, m) -> {
+                var p = PaletteStrategies.makePaletteFromChild(blockType, m, childKey, whichSide, paletteTransform);
+                return Pair.of(p.palette(), p.animation());
+            });
         }
-    }
-
-    // utility function
-    public static <T extends BlockType> @NotNull Pair<List<Palette>, @Nullable McMetaFile> makePaletteFromChild(Consumer<Palette> paletteTransform, String childKey, Predicate<String> whichSide, T blockType, ResourceManager m) {
-        var child = blockType.getChild(childKey);
-        if (child instanceof Block b) {
-            if (whichSide != null) {
-                try (TextureImage blockTexture = TextureImage.open(m,
-                        RPUtils.findFirstBlockTextureLocation(m, b, whichSide))) {
-
-                    List<Palette> targetPalette = Palette.fromAnimatedImage(blockTexture);
-                    targetPalette.forEach(paletteTransform);
-                    return Pair.of(targetPalette, blockTexture.getMcMeta());
-                } catch (Exception e) {
-                    throw new RuntimeException(String.format("Failed to generate palette for %s : %s", blockType, e));
-                }
-            } else { // whichSide should be defaulted to use all_texture (like planks)  -Xelbayria's assumption
-                try (TextureImage plankTexture = TextureImage.open(m,
-                        RPUtils.findFirstBlockTextureLocation(m, b))) {
-
-                    List<Palette> targetPalette = Palette.fromAnimatedImage(plankTexture);
-                    targetPalette.forEach(paletteTransform);
-                    return Pair.of(targetPalette, plankTexture.getMcMeta());
-                } catch (Exception e) {
-                    throw new RuntimeException(String.format("Failed to generate palette for %s : %s", blockType, e));
-                }
-            }
-        } else if (child instanceof Item i) {
-            try (TextureImage plankTexture = TextureImage.open(m,
-                    RPUtils.findFirstItemTextureLocation(m, i))) {
-
-                List<Palette> targetPalette = Palette.fromAnimatedImage(plankTexture);
-                targetPalette.forEach(paletteTransform);
-                return Pair.of(targetPalette, plankTexture.getMcMeta());
-            } catch (Exception e) {
-                throw new RuntimeException(String.format("Failed to generate palette for %s : %s", blockType, e));
-            }
-        }
-        throw new RuntimeException("No child with key \"" + childKey + "\" found for" + blockType.getId());
     }
 
 
@@ -750,5 +603,26 @@ public abstract class AbstractSimpleEntrySet<T extends BlockType, B extends Bloc
 
         return EntrySet.super.getItemForECTab(type);
     }
+
+
+    @NotNull
+    protected String makeEntryName(T w) {
+        String name;
+        if (prefix != null) {
+            name = this.prefix + "_" + w.getTypeName();
+            if (!this.postfix.isEmpty()) name += "_" + this.postfix;
+        } else {
+            name = w.getTypeName() + "_" + this.postfix;
+        }
+        return name;
+    }
+
+
+    protected @NotNull ResourceLocation makeFullEntryID(SimpleModule module, T blockType) {
+        String name = makeEntryName(blockType);
+        String fullName = module.shortenedId() + "/" + blockType.getNamespace() + "/" + name;
+        return module.makeMyRes(fullName);
+    }
+
 }
 

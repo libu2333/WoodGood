@@ -9,14 +9,14 @@ import moriyashiine.bewitchment.common.registry.BWTags;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.mehvahdjukaar.every_compat.EveryCompat;
 import net.mehvahdjukaar.every_compat.api.ItemOnlyEntrySet;
+import net.mehvahdjukaar.every_compat.api.PaletteStrategies;
 import net.mehvahdjukaar.every_compat.api.SimpleEntrySet;
 import net.mehvahdjukaar.every_compat.api.SimpleModule;
-import net.mehvahdjukaar.every_compat.misc.SpriteHelper;
 import net.mehvahdjukaar.moonlight.api.resources.RPUtils;
 import net.mehvahdjukaar.moonlight.api.resources.ResType;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceGenTask;
+import net.mehvahdjukaar.moonlight.api.set.wood.VanillaWoodTypes;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
-import net.mehvahdjukaar.moonlight.api.set.wood.WoodTypeRegistry;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -42,7 +42,7 @@ public class BewitchmentModule extends SimpleModule {
         ResourceLocation tab = modRes(Bewitchment.MOD_ID);
 
         poppet_shelf = SimpleEntrySet.builder(WoodType.class, "poppet_shelf",
-                        getModBlock("oak_poppet_shelf"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_poppet_shelf"), () -> VanillaWoodTypes.OAK,
                         w -> new PoppetShelfBlock(FabricBlockSettings.copyOf(w.planks)
                                 .pistonBehavior(PushReaction.BLOCK)
                                 .nonOpaque()
@@ -57,12 +57,11 @@ public class BewitchmentModule extends SimpleModule {
         this.addEntry(poppet_shelf);
 
         bark = ItemOnlyEntrySet.builder(WoodType.class, "bark",
-                        () -> BWObjects.OAK_BARK, () -> WoodTypeRegistry.OAK_TYPE,
+                        () -> BWObjects.OAK_BARK, () -> VanillaWoodTypes.OAK,
                         w -> new Item(new Item.Properties())
                 )
                 .requiresChildren("stripped_log") // Recipes
-                .createPaletteFromChild("log", SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE)
-                .addTexture(modRes("item/oak_bark"))
+                .addTexture(modRes("item/oak_bark"), PaletteStrategies.LOG_SIDE_STANDARD)
                 .addTag(BWTags.BARKS, Registries.ITEM)
                 .setTabKey(tab)
                 .build();

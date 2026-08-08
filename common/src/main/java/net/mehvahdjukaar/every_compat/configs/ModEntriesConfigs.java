@@ -6,13 +6,12 @@ import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigSpec;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigType;
 import net.mehvahdjukaar.moonlight.api.set.BlockSetAPI;
 import net.mehvahdjukaar.moonlight.api.set.BlockType;
-import net.mehvahdjukaar.moonlight.api.set.BlockTypeRegistry;
-import net.mehvahdjukaar.moonlight.api.set.leaves.LeavesType;
-import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.ItemLike;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -25,6 +24,9 @@ public class ModEntriesConfigs {
 
     public static ConfigSpec SPEC;
     private static boolean wasInit = false;
+    private static boolean logOnce = false;
+    private static final ArrayList<ResourceLocation> loggedBlockType = new ArrayList<>();
+    private static final ArrayList<String> loggedChildType = new ArrayList<>();
 
     // default as we are initializing it late
 
@@ -84,15 +86,48 @@ public class ModEntriesConfigs {
         return isTypeEnabled(w, null);
     }
 
-    public static <T extends BlockType> boolean isTypeEnabled(T w, @Nullable String childType) {
+    public static <T extends BlockType> boolean isTypeEnabled(T blockType, @Nullable String childType) {
         if (!wasInit) initEarlyButNotSuperEarly();
-        try {
-            if (childType != null && !CHILD_CONFIGS.get(w.getClass()).getOrDefault(childType, () -> true).get())
-                return false;
-            return BLOCK_TYPE_CONFIGS.get(w.getClass()).get(w.getId().toString()).get();
-        } catch (Exception ignored) {
+        Class<? extends BlockType> typeClass = blockType.getClass();
+        Map<String, Supplier<Boolean>> childConfigs = CHILD_CONFIGS.get(typeClass);
+        if (childConfigs == null) {
+            if (!logOnce) {
+                EveryCompat.LOGGER.warn("==> This meant you have no Supported Mod installed. <==");
+                logOnce = true;
+            }
+            if (!loggedChildType.contains(childType)) {
+                EveryCompat.LOGGER.warn("No ChildType config map found for: {}", childType);
+                loggedChildType.add(childType);
+            }
+            return true;
         }
-        return true;
+        if (childType != null && !childConfigs.getOrDefault(childType, () -> true).get()) {
+            return false;
+        }
+        Map<String, Supplier<Boolean>> blocktypeConfigs = BLOCK_TYPE_CONFIGS.get(typeClass);
+        if (blocktypeConfigs == null) {
+            if (!logOnce) {
+                EveryCompat.LOGGER.warn("==> This meant you have no BlockType Mod (Wood, Stone, & Others) installed. <==");
+                logOnce = true;
+            }
+            if (!loggedBlockType.contains(blockType.getId())) {
+                EveryCompat.LOGGER.warn("No BlockType config map found for {} - {}", typeClass.getName().substring(typeClass.getName().lastIndexOf(".") + 1), blockType.getId());
+                loggedBlockType.add(blockType.getId());
+            }
+            return true;
+        }
+
+        Supplier<Boolean> booleanSupplier = blocktypeConfigs.get(blockType.getId().toString());
+        if (booleanSupplier != null) return booleanSupplier.get();
+
+        return true; // Vanilla BlockTypes that will have null value in booleanSupplier
     }
 
+    public static Map<String, Supplier<Boolean>> getChildConfigs(Class<? extends BlockType> blockType) {
+        return CHILD_CONFIGS.get(blockType);
+    }
+
+    public static Map<String, Supplier<Boolean>> getBlockTypeConfigs(Class<? extends BlockType> blockType) {
+        return BLOCK_TYPE_CONFIGS.get(blockType);
+    }
 }

@@ -1,5 +1,5 @@
 architectury {
-    common(rootProject.enabled_platforms.split(","))
+    common(enabled_platforms.split(","))
 }
 
 loom {
@@ -7,8 +7,8 @@ loom {
 }
 
 dependencies {
-    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
-    modApi "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    modImplementation "net.fabricmc:fabric-loader:$fabric_loader_version"
+    modApi "net.fabricmc.fabric-api:fabric-api:$fabric_api_version"
 
 
     annotationProcessor 'net.fabricmc:sponge-mixin:0.12.5+mixin.0.8.5'
@@ -19,44 +19,58 @@ dependencies {
 
 //!! MOONLIGHT LIB (REQUIRED) --------------------------------------------------------------------------------------- \\
     String path = System.getenv('REPOS20_1')
-    boolean usesMavenLocalML =  System.getenv().MY_PC == "1"
-    print "isMyPc: $usesMavenLocalML"
 
-        //- Repository LOCAL
+    //- LOCAL
     if (enable_moonlight_test.toBoolean()) {
-        if (usesMavenLocalML) {
-            //- ~/fabric/mods LOCAL
-            modImplementation("net.mehvahdjukaar:moonlight-fabric:${project.moonlight_testVersion}") // LOCAL
-        } else {
-            modImplementation(files(path + "\\Moonlight\\fabric\\build\\libs\\moonlight-${moonlight_testVersion}-fabric.jar"))
-        }
-    } else {
-        //+ MAVEN
-        modImplementation("maven.modrinth:moonlight:${moonlight_mavenVersion}-fabric") // v2.14.1
+        modApi(files(path + "\\Moonlight\\common\\build\\libs\\moonlight-${moonlight_testVersion}.jar"))
     }
+    //+ MAVEN
+    else {
+        if (maven_backup.toBoolean()) modApi("maven.modrinth:moonlight:$moonlight_version-fabric")
+        else modApi("net.mehvahdjukaar:moonlight:$moonlight_version") { transitive = false }
+    }
+
 
 //!! ============================================ DEPENDENCIES ====================================================== \\
     //+ REQUIRED - The modules access libaries from below
     modCompileOnly("curse.maven:framework-549225:5911975") // v0.7.12 | Furniture Refurbished
     modCompileOnly("curse.maven:valhelsia-core-416935:5376599") // Valhelsia-Furniture
-    modCompileOnly("curse.maven:zeta-968868:5078215") // v1.0-13 | Quark
+    modCompileOnly("curse.maven:zeta-968868:6432578") // v1.0-30 | Quark
 
-    //+ ~/common/mods LOCAL
+        //+ OTHER MAVENS
+
+        //+ ~/common/mods LOCAL
 //    modCompileOnly("net.stehschnitzel.shutter:shutter-2.0.2-1.20.1")
 
 //!! ================================================== IMPORTS ===================================================== \\
     //+ REQUIRED - The modules access libaries from below
+
+    // MACAW's
+    modCompileOnly("curse.maven:macaws-bridges-351725:5240495") // ABSTRACT not created yet
+//    modCompileOnly("curse.maven:macaws-doors-378646:6146455") //- It's fine without the import
+    modCompileOnly("curse.maven:macaws-fences-and-walls-453925:6363061") // ABSTRACT not created yet
+    modCompileOnly("curse.maven:macaws-lights-and-lamps-502372:5450302") // ABSTRACT not created yet
+    modCompileOnly("curse.maven:macaws-paths-and-pavings-629153:5054857") // ABSTRACT not created yet
+    modCompileOnly("curse.maven:macaws-roofs-352039:4590013") // ABSTRACT not created yet
+//    modCompileOnly("curse.maven:macaws-trapdoors-400933:5977711") //- It's fine without the import
+    modCompileOnly("curse.maven:macaws-windows-363569:4750644") // ABSTRACT not created yet
+    modCompileOnly("curse.maven:macaws-furniture-359540:7197865")
+    modCompileOnly("curse.maven:macaws-stairs-1119394:6155218") // ABSTRACT not created yet
+
+    //+ GENERAL
     modCompileOnly("curse.maven:another-furniture-610492:4815126")
-    modCompileOnly("curse.maven:backpacked-352835:5401968")
+    modCompileOnly("curse.maven:backpacked-352835:7624223")
     modCompileOnly("curse.maven:beautiful-campfires-1085950:6162183")
     modCompileOnly("curse.maven:blockus-312289:6256096")
+    modCompileOnly("curse.maven:building-but-better-989479:7627392")
     modCompileOnly("curse.maven:camp-chair-531744:4579679")
     modCompileOnly("curse.maven:chipped-456956:4634858") // v3.0.1
-    modCompileOnly("curse.maven:dawn-of-time-312359:6643151")
+    modCompileOnly("curse.maven:create-fabric-624165:5982726")
+    modCompileOnly("curse.maven:dawn-of-time-312359:6863594")
     modCompileOnly("curse.maven:decorative-blocks-362528:5089408")
     modCompileOnly("curse.maven:exlines-bark-carpets-527296:4661550")
-    modCompileOnly("curse.maven:farmersdelight-398521:6597298")
-    modCompileOnly("curse.maven:friends-and-foes-551364:4639311")
+    modCompileOnly("curse.maven:farmers-delight-refabricated-993166:6626608")
+    modCompileOnly("curse.maven:friends-and-foes-551364:6354623")
     modCompileOnly("curse.maven:furnish-547069:4821511")
     modCompileOnly("curse.maven:handcrafted-538214:5118730")
     modCompileOnly("curse.maven:hearth-and-home-849364:4828281")
@@ -64,8 +78,8 @@ dependencies {
     modCompileOnly("curse.maven:more-chest-variants-lieonlion-858032:5476602") // Quad - LieOnLion
     modCompileOnly("curse.maven:more-crafting-tables-lieonlion-913586:5330969") // Quad - LieOnLion
     modCompileOnly("curse.maven:refurbished-furniture-897116:6272883") // Framework
-    modCompileOnly("curse.maven:quark-243121:5093415")
-    modCompileOnly("curse.maven:storage-drawers-223852:5981394")
+    modCompileOnly("curse.maven:quark-243121:6427817")
+    modCompileOnly("curse.maven:storage-drawers-223852:6994478")
     modCompileOnly("curse.maven:table-top-craft-fabric-729535:5319819")
     modCompileOnly("curse.maven:twigs-496913:4605097")
     modCompileOnly("curse.maven:variant-vanilla-blocks-866509:5150741") //v1.3.8
@@ -75,6 +89,9 @@ dependencies {
 
     //+ OTHER MAVENs
     modCompileOnly("maven.modrinth:stylish-stiles:zLlRqz68")
+
+    //+ LOCAL
+    modCompileOnly("copper-age-common:copperagebackport-fabric-1.20.1-0.1.4")
 
 //!! ========================================== DISABLED FOR A REASON =============================================== \\
 

@@ -8,7 +8,7 @@ import net.mehvahdjukaar.every_compat.EveryCompat;
 import net.mehvahdjukaar.every_compat.api.RenderLayer;
 import net.mehvahdjukaar.every_compat.api.SimpleEntrySet;
 import net.mehvahdjukaar.every_compat.api.SimpleModule;
-import net.mehvahdjukaar.every_compat.misc.SpriteHelper;
+import net.mehvahdjukaar.every_compat.misc.CompatSpritesHelper;
 import net.mehvahdjukaar.moonlight.api.resources.BlockTypeResTransformer;
 import net.mehvahdjukaar.moonlight.api.resources.RPUtils;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceGenTask;
@@ -17,8 +17,8 @@ import net.mehvahdjukaar.moonlight.api.resources.recipe.TemplateRecipeManager;
 import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
 import net.mehvahdjukaar.moonlight.api.resources.textures.Respriter;
 import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
+import net.mehvahdjukaar.moonlight.api.set.wood.VanillaWoodTypes;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
-import net.mehvahdjukaar.moonlight.api.set.wood.WoodTypeRegistry;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.mehvahdjukaar.moonlight.core.misc.McMetaFile;
 import net.minecraft.core.Direction;
@@ -58,7 +58,7 @@ public class ValhelsiaStructuresModule extends SimpleModule {
         ResourceLocation tab = modRes("main");
 
         strippedPosts = SimpleEntrySet.builder(WoodType.class, "post", "stripped",
-                        getModBlock("stripped_oak_post"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("stripped_oak_post"), () -> VanillaWoodTypes.OAK,
                         woodType -> new PostBlock(postProperties(woodType))
                 )
                 .requiresChildren("stripped_log") //REASON: textures
@@ -72,7 +72,7 @@ public class ValhelsiaStructuresModule extends SimpleModule {
         this.addEntry(strippedPosts);
 
         posts = SimpleEntrySet.builder(WoodType.class, "post",
-                        getModBlock("oak_post"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_post"), () -> VanillaWoodTypes.OAK,
                         woodType -> new StrippablePostBlock(woodType, postProperties(woodType))
                 )
                 //TEXTURES: manual generation (BELOW)
@@ -85,7 +85,7 @@ public class ValhelsiaStructuresModule extends SimpleModule {
         this.addEntry(posts);
 
         cutStrippedPosts = SimpleEntrySet.builder(WoodType.class, "post", "cut_stripped",
-                        getModBlock("cut_stripped_oak_post"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("cut_stripped_oak_post"), () -> VanillaWoodTypes.OAK,
                         woodType -> new CutPostBlock(cutPostProperties(woodType))
                 )
                 .requiresFromMap(strippedPosts.blocks) //REASON: recipes
@@ -102,7 +102,7 @@ public class ValhelsiaStructuresModule extends SimpleModule {
         this.addEntry(cutStrippedPosts);
 
         cutPosts = SimpleEntrySet.builder(WoodType.class, "post", "cut",
-                        getModBlock("cut_oak_post"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("cut_oak_post"), () -> VanillaWoodTypes.OAK,
                         woodType -> new StrippableCutPostBlock(woodType, cutPostProperties(woodType))
                 )
                 .requiresFromMap(posts.blocks) //REASON: recipes
@@ -117,7 +117,7 @@ public class ValhelsiaStructuresModule extends SimpleModule {
         this.addEntry(cutPosts);
 
         bundledStrippedPosts = SimpleEntrySet.builder(WoodType.class, "posts", "bundled_stripped",
-                        getModBlock("bundled_stripped_oak_posts"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("bundled_stripped_oak_posts"), () -> VanillaWoodTypes.OAK,
                         woodType -> new RotatedPillarBlock(bundledPostProperties(woodType))
                 )
                 .requiresFromMap(strippedPosts.blocks) //REASON: recipes
@@ -130,7 +130,7 @@ public class ValhelsiaStructuresModule extends SimpleModule {
         this.addEntry(bundledStrippedPosts);
 
         bundledPosts = SimpleEntrySet.builder(WoodType.class, "posts", "bundled",
-                        getModBlock("bundled_oak_posts"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("bundled_oak_posts"), () -> VanillaWoodTypes.OAK,
                         woodType -> new StrippableRotatedPillarBlock(() -> bundledStrippedPosts.blocks.get(woodType), bundledPostProperties(woodType))
                 )
                 .requiresFromMap(posts.blocks) //REASON: recipes
@@ -187,9 +187,9 @@ public class ValhelsiaStructuresModule extends SimpleModule {
                     ResourceLocation id = Utils.getID(block);
 
                     try (TextureImage logTexture = TextureImage.open(manager,
-                            RPUtils.findFirstBlockTextureLocation(manager, w.log, SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE));
+                            RPUtils.findFirstBlockTextureLocation(manager, w.log, CompatSpritesHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE));
                          TextureImage topTexture = TextureImage.open(manager,
-                                 RPUtils.findFirstBlockTextureLocation(manager, w.log, SpriteHelper.LOOKS_LIKE_TOP_LOG_TEXTURE))) {
+                                 RPUtils.findFirstBlockTextureLocation(manager, w.log, CompatSpritesHelper.LOOKS_LIKE_TOP_LOG_TEXTURE))) {
 
                         String newId = BlockTypeResTransformer.replaceTypeNoNamespace("block/post/oak_post", w, id, "oak");
                         var newTexture = logTexture.makeCopy();
@@ -197,15 +197,13 @@ public class ValhelsiaStructuresModule extends SimpleModule {
                         sink.addTextureIfNotPresent(manager, newId, () -> newTexture);
 
                         var newTop = topTexture.makeCopy();
-                        createTopTexture(topTexture, newTop);
+                        CompatSpritesHelper.createSmallLogTopTexture(topTexture, newTop);
 
                         sink.addTextureIfNotPresent(manager, newId + "_top", () -> newTop);
 
                     } catch (Exception e) {
                         EveryCompat.LOGGER.error("Failed to generate Post texture for for {} : {}", block, e);
-
                     }
-
                 });
 
                 //!! stripped_oak_posts
@@ -213,24 +211,23 @@ public class ValhelsiaStructuresModule extends SimpleModule {
                     ResourceLocation id = Utils.getID(block);
 
                     try (TextureImage logTexture = TextureImage.open(manager,
-                            RPUtils.findFirstBlockTextureLocation(manager, w.getBlockOfThis("stripped_log"), SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE));
+                            RPUtils.findFirstBlockTextureLocation(manager, w.getBlockOfThis("stripped_log"), CompatSpritesHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE));
                          TextureImage topTexture = TextureImage.open(manager,
-                                 RPUtils.findFirstBlockTextureLocation(manager, w.getBlockOfThis("stripped_log"), SpriteHelper.LOOKS_LIKE_TOP_LOG_TEXTURE))) {
+                                 RPUtils.findFirstBlockTextureLocation(manager, w.getBlockOfThis("stripped_log"), CompatSpritesHelper.LOOKS_LIKE_TOP_LOG_TEXTURE))) {
 
                         String newId = BlockTypeResTransformer.replaceTypeNoNamespace("block/post/stripped_oak_post", w, id, "oak");
 
-                        var newTexture = logTexture.makeCopy();
+                        try (TextureImage newTexture = logTexture.makeCopy();
+                             TextureImage newTop = topTexture.makeCopy()) {
+                            sink.addTextureIfNotPresent(manager, newId, () -> newTexture);
 
-                        sink.addTextureIfNotPresent(manager, newId, () -> newTexture);
+                            CompatSpritesHelper.createSmallLogTopTexture(topTexture, newTop);
 
-                        var newTop = topTexture.makeCopy();
-                        createTopTexture(topTexture, newTop);
-
-                        sink.addTextureIfNotPresent(manager, newId + "_top", () -> newTop);
+                            sink.addTextureIfNotPresent(manager, newId + "_top", () -> newTop);
+                        }
 
                     } catch (Exception e) {
                         EveryCompat.LOGGER.error("Failed to generate Stripped-Post texture for {} : {}", block, e);
-
                     }
                 });
             } catch (Exception ex) {
@@ -244,9 +241,9 @@ public class ValhelsiaStructuresModule extends SimpleModule {
                          EveryCompat.res("block/vs/bundledposts_top_outer_m"));
 
                  TextureImage logInnerMask = TextureImage.open(manager,
-                         EveryCompat.res("block/vs/log_top_inner_m"));
+                         EveryCompat.res("block/common_log_top_inner_m"));
                  TextureImage logOuterMask = TextureImage.open(manager,
-                         EveryCompat.res("block/vs/log_top_outer_m"))
+                         EveryCompat.res("block/common_log_top_outer_m"))
             ) {
 
                 bundledPosts.blocks.forEach((w, block) -> {
@@ -280,11 +277,11 @@ public class ValhelsiaStructuresModule extends SimpleModule {
                                TextureImage BPTopInnerMask, TextureImage BPTopOuterMask,
                                ResourceLocation getLogSide, ResourceLocation getLogTop,
                                ResourceSink sink, ResourceManager manager, Block block
-                               ) {
+    ) {
         try (TextureImage logSide_texture = TextureImage.open(manager,
-                 RPUtils.findFirstBlockTextureLocation(manager, getLogBlock, SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE));
+                RPUtils.findFirstBlockTextureLocation(manager, getLogBlock, CompatSpritesHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE));
              TextureImage logTop_texture = TextureImage.open(manager,
-                 RPUtils.findFirstBlockTextureLocation(manager, getLogBlock, SpriteHelper.LOOKS_LIKE_TOP_LOG_TEXTURE));
+                     RPUtils.findFirstBlockTextureLocation(manager, getLogBlock, CompatSpritesHelper.LOOKS_LIKE_TOP_LOG_TEXTURE));
              TextureImage TextureSide = TextureImage.open(manager, getLogSide);
              TextureImage TextureTop = TextureImage.open(manager, getLogTop)
         ) {
@@ -298,8 +295,7 @@ public class ValhelsiaStructuresModule extends SimpleModule {
                     NativeImage standardSize = new NativeImage(16, 16, false);
                     standardSize.copyFrom(logSide_texture.getImage());
                     sideImage = TextureImage.of(standardSize);
-                }
-                else {
+                } else {
                     sideImage = logSide_texture;
                 }
 
@@ -308,11 +304,11 @@ public class ValhelsiaStructuresModule extends SimpleModule {
                 Respriter respriterSide = Respriter.of(TextureSide);
 
                 // Recoloring
-                TextureImage recoloredSIDE = respriterSide.recolorWithAnimation(targetSide, metaSide);
 
                 // Adding to the Resource
-                sink.addTextureIfNotPresent(manager, newPath, () -> recoloredSIDE);
-                recoloredSIDE.close();
+                sink.addTextureIfNotPresent(manager, newPath, () ->
+                        respriterSide.recolorWithAnimation(targetSide, metaSide)
+                );
             }
 
 // Top texture =================================================================================================
@@ -324,8 +320,7 @@ public class ValhelsiaStructuresModule extends SimpleModule {
                     NativeImage standardSize = new NativeImage(16, 16, false);
                     standardSize.copyFrom(logTop_texture.getImage());
                     topImage = TextureImage.of(standardSize);
-                }
-                else {
+                } else {
                     topImage = logTop_texture;
                 }
 
@@ -355,26 +350,6 @@ public class ValhelsiaStructuresModule extends SimpleModule {
         }
     }
 
-    private void createTopTexture(TextureImage original, TextureImage newImage) {
-        original.forEachFramePixel((i, x, y) -> {
-            //TODO: use ImageTransformer here instead
-            int localX = x - original.getFrameStartX(i);
-            int localY = y - original.getFrameStartX(i);
-            if (localX >= 5 && localX <= 10 && localY >= 5 && localY <= 10) {
-                newImage.getImage().setPixelRGBA(x - 3, y - 3, original.getImage().getPixelRGBA(x, y));
-            } else if (localX >= 14 && localY > 0 && localY <= 7) {
-                newImage.getImage().setPixelRGBA(x - 6, y, original.getImage().getPixelRGBA(x, y));
-                newImage.getImage().setPixelRGBA(x, y, 0);
-            } else if (localY >= 14 && localX > 0 && localX <= 7) {
-                newImage.getImage().setPixelRGBA(x, y - 6, original.getImage().getPixelRGBA(x, y));
-                newImage.getImage().setPixelRGBA(x, y, 0);
-            } else if (localX >= 14 && localY >= 14) {
-                newImage.getImage().setPixelRGBA(x - 6, y - 6, original.getImage().getPixelRGBA(x, y));
-            } else if (localX >= 10 || localY >= 10) {
-                newImage.getImage().setPixelRGBA(x, y, 0);
-            }
-        });
-    }
 
     public class StrippablePostBlock extends PostBlock {
         public final WoodType woodType;

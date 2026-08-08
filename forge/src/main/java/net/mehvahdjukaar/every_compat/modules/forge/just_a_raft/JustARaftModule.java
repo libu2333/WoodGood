@@ -6,13 +6,13 @@ import com.mrbysco.justaraftmod.init.RaftRegistry;
 import com.mrbysco.justaraftmod.items.RaftItem;
 import net.mehvahdjukaar.every_compat.EveryCompat;
 import net.mehvahdjukaar.every_compat.api.ItemOnlyEntrySet;
+import net.mehvahdjukaar.every_compat.api.PaletteStrategies;
 import net.mehvahdjukaar.every_compat.api.SimpleModule;
-import net.mehvahdjukaar.every_compat.misc.SpriteHelper;
 import net.mehvahdjukaar.moonlight.api.resources.RPUtils;
 import net.mehvahdjukaar.moonlight.api.resources.ResType;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceGenTask;
+import net.mehvahdjukaar.moonlight.api.set.wood.VanillaWoodTypes;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
-import net.mehvahdjukaar.moonlight.api.set.wood.WoodTypeRegistry;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Consumer;
 
-import static net.mehvahdjukaar.every_compat.common_classes.TagUtility.getATagOrCreateANew;
+import static net.mehvahdjukaar.every_compat.misc.UtilityTag.getATagOrCreateANew;
 
 //SUPPORT: v3.1.0+
 public class JustARaftModule extends SimpleModule {
@@ -34,7 +34,7 @@ public class JustARaftModule extends SimpleModule {
         super(modId, "jar");
 
         rafts = ItemOnlyEntrySet.builder(WoodType.class, "raft",
-                        getModItem("oak_raft"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModItem("oak_raft"), () -> VanillaWoodTypes.OAK,
                         w -> {
                             RaftType newRaft = getRaft(w);
 
@@ -43,8 +43,8 @@ public class JustARaftModule extends SimpleModule {
                             return new RaftItem(newRaft, new Item.Properties());
                         }
                 )
-                .createPaletteFromChild("log", SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE)
-                .addTextureM(modRes("entity/raft/oak_raft"), EveryCompat.res("entity/raft/oak_raft_m"))
+                .addTextureM(modRes("entity/raft/oak_raft"), EveryCompat.res("entity/raft/oak_raft_m"),
+                        PaletteStrategies.LOG_SIDE_STANDARD)
                 .addTag(modRes("rafts"), Registries.ITEM)
                 .setTabKey(RaftRegistry.RAFT_TAB.getId())
                 .build();

@@ -5,14 +5,13 @@ import net.mehvahdjukaar.every_compat.EveryCompat;
 import net.mehvahdjukaar.every_compat.api.SimpleEntrySet;
 import net.mehvahdjukaar.every_compat.api.SimpleModule;
 import net.mehvahdjukaar.moonlight.api.platform.RegHelper;
+import net.mehvahdjukaar.moonlight.api.set.wood.VanillaWoodTypes;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
-import net.mehvahdjukaar.moonlight.api.set.wood.WoodTypeRegistry;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.ai.village.poi.PoiType;
-import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.level.block.BeehiveBlock;
 import net.minecraft.world.level.block.Block;
@@ -23,14 +22,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.Set;
 import java.util.function.Supplier;
 
+//SUPPORT: V3.0.9+
 public class FriendsAndFoesModule extends SimpleModule {
 
     public final SimpleEntrySet<WoodType, Block> beehives;
 
-    // Point-Of-Interest for Beehives - //!! - remove when the addBlocksToPOI() is fixed & enabled below
+    // Point-Of-Interest for Beehives
     protected final ResourceLocation poiId = EveryCompat.res("faf_beehive");
+
     public final Supplier<PoiType> compatBeeHivePOI = RegHelper.registerPOI(poiId,
             () -> new PoiType(getBeehives(), 1, 1));
+
     private Set<BlockState> getBeehives() {
         var set = new ImmutableSet.Builder<BlockState>();
         beehives.blocks.values().forEach(b -> set.addAll(b.getStateDefinition().getPossibleStates()));
@@ -41,17 +43,20 @@ public class FriendsAndFoesModule extends SimpleModule {
         super(modId, "faf");
 
         beehives = SimpleEntrySet.builder(WoodType.class, "beehive",
-                        getModBlock("spruce_beehive"),
-                        () -> WoodTypeRegistry.getValue(new ResourceLocation("spruce")),
-                        w -> new BeehiveBlock(Utils.copyPropertySafe(Blocks.BEEHIVE)))
-                .addTextureM(EveryCompat.res("block/spruce_beehive_front_honey"), EveryCompat.res("block/spruce_beehive_front_honey_m"))
-                .addTextureM(EveryCompat.res("block/spruce_beehive_front"), EveryCompat.res("block/spruce_beehive_front_m"))
-                .addTextureM(EveryCompat.res("block/spruce_beehive_side"), EveryCompat.res("block/spruce_beehive_side_m"))
+                        getModBlock("spruce_beehive"), () -> VanillaWoodTypes.SPRUCE,
+                        w -> new BeehiveBlock(Utils.copyPropertySafe(Blocks.BEEHIVE))
+                )
+                .addTile(() -> BlockEntityType.BEEHIVE)
+                .addTextureM(EveryCompat.res("block/spruce_beehive_front_honey"),
+                        EveryCompat.res("block/spruce_beehive_front_honey_m"))
+                .addTextureM(EveryCompat.res("block/spruce_beehive_front"),
+                        EveryCompat.res("block/spruce_beehive_front_m"))
+                .addTextureM(EveryCompat.res("block/spruce_beehive_side"),
+                        EveryCompat.res("block/spruce_beehive_side_m"))
                 .addTexture(EveryCompat.res("block/spruce_beehive_end"))
                 .addTag(BlockTags.MINEABLE_WITH_AXE, Registries.BLOCK)
                 .addTag(BlockTags.BEEHIVES, Registries.BLOCK)
                 .setTabKey(CreativeModeTabs.BUILDING_BLOCKS)
-                .addTile(() -> BlockEntityType.BEEHIVE)
                 .defaultRecipe()
                 .copyParentDrop()
                 .build();
@@ -59,10 +64,10 @@ public class FriendsAndFoesModule extends SimpleModule {
 
     }
 
-    @Override
-    public void onModSetup() {
-        super.onModSetup();
-        //!! Dont use below until the problem is fixed
+//    @Override
+//    public void onModSetup() {
+//        super.onModSetup();
+    /// Currently not working properly in FORGE, crashed upon creating a world or loading a world, cause is unknown
 //        RegHelper.addBlocksToPOI(PoiTypes.BEEHIVE, beehives.blocks.values());
-    }
+//    }
 }

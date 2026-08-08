@@ -14,9 +14,9 @@ import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceSink;
 import net.mehvahdjukaar.moonlight.api.resources.recipe.IRecipeTemplate;
 import net.mehvahdjukaar.moonlight.api.set.BlockType;
 import net.mehvahdjukaar.moonlight.api.set.leaves.LeavesType;
-import net.mehvahdjukaar.moonlight.api.set.leaves.LeavesTypeRegistry;
+import net.mehvahdjukaar.moonlight.api.set.leaves.VanillaLeavesTypes;
+import net.mehvahdjukaar.moonlight.api.set.wood.VanillaWoodTypes;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
-import net.mehvahdjukaar.moonlight.api.set.wood.WoodTypeRegistry;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.recipes.FinishedRecipe;
@@ -40,14 +40,26 @@ import static java.util.Map.entry;
 @SuppressWarnings("unused")
 public class ResourcesUtils {
 
-
-    @SuppressWarnings("PointlessBooleanExpression")
+    @Deprecated(forRemoval = true)
+    /// @deprecated USE {@link ResourcesUtils#generateStandardBlockFiles(ResourceManager, ResourceSink, Map, BlockType, BlockTypeResTransformer, BlockTypeResTransformer, ExtraModelConfiguration)}
     public static <B extends Block, T extends BlockType> void generateStandardBlockModels(
             ResourceManager manager, ResourceSink sink,
             Map<T, B> blocks, T baseType,
             BlockTypeResTransformer<T> modelTransformer,
             BlockTypeResTransformer<T> blockStateTransformer,
-            ModelConfiguration modelConfig
+            ExtraModelConfiguration extraModelConfig
+    ) {
+        generateStandardBlockFiles(manager, sink, blocks, baseType, modelTransformer, blockStateTransformer, extraModelConfig);
+    }
+
+    @SuppressWarnings("PointlessBooleanExpression")
+    /// Generate Blockstate & models/block files
+    public static <B extends Block, T extends BlockType> void generateStandardBlockFiles(
+            ResourceManager manager, ResourceSink sink,
+            Map<T, B> blocks, T baseType,
+            BlockTypeResTransformer<T> modelTransformer,
+            BlockTypeResTransformer<T> blockStateTransformer,
+            ExtraModelConfiguration extraModelConfig
     ) {
 
         if (blocks.isEmpty()) return;
@@ -57,7 +69,7 @@ public class ResourcesUtils {
         Block baseBlock = BlockType.changeBlockType(first.getValue(), first.getKey(), baseType);
 
         if (baseBlock == null) {
-            EveryCompat.LOGGER.error("Skipped generating some block assets because oakBlock is null for {}", Utils.getID(first.getValue()));
+            EveryCompat.LOGGER.error("Skipped generating some block assets because baseBlock is null for {}", Utils.getID(first.getValue()));
             return;
         }
 
@@ -67,13 +79,13 @@ public class ResourcesUtils {
 
         /// Blockstate & Models
         try {
-            StaticResource oakBlockstate = StaticResource.getOrFail(manager, ResType.BLOCKSTATES.getPath(baseId));
+            StaticResource oakBlockstate = StaticResource.getOrLog(manager, ResType.BLOCKSTATES.getPath(baseId));
 
             JsonElement insideBlockstates = RPUtils.deserializeJson(new ByteArrayInputStream(oakBlockstate.data));
 
             modelsLoc.addAll(RPUtils.findAllResourcesInJsonRecursive(insideBlockstates, s -> s.equals("model")));
 
-            List<StaticResource> oakBlockModels = gatherNonVanillaModels(manager, modelsLoc, modelConfig);
+            List<StaticResource> oakBlockModels = gatherNonVanillaModels(manager, modelsLoc, extraModelConfig);
 
             blocks.forEach((blockType, block) -> {
                 ResourceLocation blockId = Utils.getID(block);
@@ -97,7 +109,7 @@ public class ResourcesUtils {
                                 //Adding to the resources
                                 sink.addResourceIfNotPresent(manager, newModel);
                             } catch (Exception e) {
-                                EveryCompat.LOGGER.error("Failed to add {}'s models/block file: {}", Utils.getID(block), e.getMessage());
+                                EveryCompat.LOGGER.error("Failed to add {}'s models/block file: {}", Utils.getID(block), e);
                             }
                         }
                     }
@@ -107,7 +119,7 @@ public class ResourcesUtils {
 //                    }
 
                 } catch (Exception e) {
-                    EveryCompat.LOGGER.error("Failed to add {}'s blockstate file: {}", block, e.getMessage());
+                    EveryCompat.LOGGER.error("Failed to add {}'s blockstate file: {}", block, e);
                 }
             });
         } catch (Exception e) {
@@ -116,7 +128,7 @@ public class ResourcesUtils {
 
     }
 
-    private static List<StaticResource> gatherNonVanillaModels(ResourceManager manager, Set<String> modelsLoc, ModelConfiguration modelConfig) {
+    private static List<StaticResource> gatherNonVanillaModels(ResourceManager manager, Set<String> modelsLoc, ExtraModelConfiguration modelConfig) {
         List<StaticResource> models = new ArrayList<>();
 
         for (var m : modelsLoc) {
@@ -142,7 +154,7 @@ public class ResourcesUtils {
     public static <I extends Item, T extends BlockType> void generateStandardItemModels(
             ResourceManager manager, ResourceSink sink,
             Map<T, I> items, T baseType, BlockTypeResTransformer<T> itemModelTransformer,
-            ModelConfiguration modelConfig
+            ExtraModelConfiguration modelConfig
     ) {
 
         if (items.isEmpty()) return;
@@ -228,13 +240,13 @@ public class ResourcesUtils {
 
         // Modifying the model files' content
         if (baseType instanceof LeavesType leavesType) {
-            SpriteHelper.replaceLeavesTextures(transformer, leavesType);
-            var woodT = leavesType.getWoodType();
+            CompatSpritesHelper.replaceLeavesTextures(transformer, leavesType);
+            var woodT = leavesType.getAssociatedWoodType();
             if (woodT != null) {
-                SpriteHelper.replaceWoodTextures(transformer, woodT);
+                CompatSpritesHelper.replaceWoodTextures(transformer, woodT);
             }
         } else if (baseType instanceof WoodType woodType) {
-            SpriteHelper.replaceWoodTextures(transformer, woodType);
+            CompatSpritesHelper.replaceWoodTextures(transformer, woodType);
         }
 
         transformer.replaceGenericType(oldTypeName, "block");
@@ -244,7 +256,7 @@ public class ResourcesUtils {
 
 
     //creates and add new jsons based off the ones at the given resources with the provided modifiers
-    public static <B extends Block, T extends BlockType> void addBlockResources(ResourceManager manager, ResourceSink pack,
+    public static <B extends Block, T extends BlockType> void addBlockResources(ResourceManager manager, ResourceSink sink,
                                                                                 Map<T, B> blocks,
                                                                                 BlockTypeResTransformer<T> modifier, ResourceLocation... jsonsLocations) {
         List<StaticResource> original = Arrays.stream(jsonsLocations).map(s -> StaticResource.getOrLog(manager, s)).toList();
@@ -259,7 +271,7 @@ public class ResourcesUtils {
                         Preconditions.checkArgument(newRes.location != res.location,
                                 "ids cant be the same: " + newRes.location);
 
-                        pack.addResource(newRes);
+                        sink.addResource(newRes);
                     } catch (Exception e) {
                         if (res != null) {
                             EveryCompat.LOGGER.error("Failed to generate json resource from {}", res.location);
@@ -277,7 +289,7 @@ public class ResourcesUtils {
      */
     public static void addLeavesRecipes(String modId, ResourceManager manager, ResourceSink pack,
                                         Map<LeavesType, Item> blocks, String oakRecipe) {
-        addBlocksRecipes(modId, manager, pack, blocks, oakRecipe, LeavesTypeRegistry.OAK_TYPE);
+        addBlocksRecipes(modId, manager, pack, blocks, oakRecipe, VanillaLeavesTypes.OAK);
     }
 
     /**
@@ -285,7 +297,7 @@ public class ResourcesUtils {
      */
     public static <B extends Item> void addWoodRecipes(String modId, ResourceManager manager, ResourceSink pack,
                                                        Map<WoodType, B> blocks, String oakRecipe) {
-        addBlocksRecipes(modId, manager, pack, blocks, oakRecipe, WoodTypeRegistry.OAK_TYPE);
+        addBlocksRecipes(modId, manager, pack, blocks, oakRecipe, VanillaWoodTypes.OAK);
     }
 
     /**
@@ -298,10 +310,10 @@ public class ResourcesUtils {
 
     @SuppressWarnings("removal")
     public static <B extends Item, T extends BlockType> void addBlocksRecipes(ResourceManager manager, ResourceSink pack,
-                                                                              Map<T, B> items, ResourceLocation oakRecipe, T fromType,
+                                                                              Map<T, B> items, ResourceLocation baseRecipe, T fromType,
                                                                               int index) {
         IRecipeTemplate<?> template = RPUtils.readRecipeAsTemplate(manager,
-                ResType.RECIPES.getPath(oakRecipe));
+                ResType.RECIPES.getPath(baseRecipe));
 
         items.forEach((w, i) -> {
 
@@ -312,13 +324,14 @@ public class ResourcesUtils {
                     String blockId = RecipeBuilder.getDefaultRecipeId(i).toString();
                     FinishedRecipe newR;
 
-                    String oakRecipePath = oakRecipe.getPath();
-                    String modifiedRecipe = oakRecipePath.substring(oakRecipePath.lastIndexOf("/") + 1).replace(fromType.getTypeName(), w.getTypeName());
+                    String baseRecipePath = baseRecipe.getPath();
+                    String modifiedRecipePath = baseRecipePath.substring(baseRecipePath.lastIndexOf("/") + 1).replace(fromType.getTypeName(), w.getTypeName());
                     String target = blockId.substring(blockId.lastIndexOf("/") + 1);
                     // Replaced the >text< with modifiedRecipe: everycomp:q/biomesoplenty/ >fir_vertical_slab<
-                    String newId = blockId.replace(target, modifiedRecipe);
+                    String newId = blockId.replace(target, modifiedRecipePath);
 
-                    if (!blockId.equals(newId)) {
+                    // matches() ensure the last word, [a-z]_[a-z] is not one word, CASE: lightman's currency
+                    if (!blockId.equals(newId) && newId.matches("\\w+:\\w+/\\w+/\\w+_\\w+")) {
                         newR = template.createSimilar(fromType, w, w.mainChild().asItem(), newId);
                     }
                     else {
@@ -331,7 +344,7 @@ public class ResourcesUtils {
                     // Adding to the resources
                     pack.addRecipe(newR);
                 } catch (Exception e) {
-                    EveryCompat.LOGGER.error("Failed to generate recipe @ {} for {}: {}", oakRecipe, i, e.getMessage());
+                    EveryCompat.LOGGER.error("Failed to generate recipe @ {} for {}: {}", baseRecipe, i, e.getMessage());
                 }
             }
         });

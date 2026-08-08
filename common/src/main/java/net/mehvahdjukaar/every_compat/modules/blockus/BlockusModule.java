@@ -7,20 +7,21 @@ import com.brand.blockus.blocks.base.SmallHedgeBlock;
 import com.brand.blockus.utils.BlockFactory;
 import net.fabricmc.fabric.api.registry.StrippableBlockRegistry;
 import net.mehvahdjukaar.every_compat.EveryCompat;
+import net.mehvahdjukaar.every_compat.api.PaletteStrategies;
 import net.mehvahdjukaar.every_compat.api.RenderLayer;
 import net.mehvahdjukaar.every_compat.api.SimpleEntrySet;
 import net.mehvahdjukaar.every_compat.api.SimpleModule;
-import net.mehvahdjukaar.every_compat.common_classes.TagUtility;
-import net.mehvahdjukaar.every_compat.misc.SpriteHelper;
+import net.mehvahdjukaar.every_compat.misc.CompatSpritesHelper;
+import net.mehvahdjukaar.every_compat.misc.UtilityTag;
 import net.mehvahdjukaar.moonlight.api.resources.BlockTypeResTransformer;
 import net.mehvahdjukaar.moonlight.api.resources.RPUtils;
 import net.mehvahdjukaar.moonlight.api.resources.pack.ResourceGenTask;
 import net.mehvahdjukaar.moonlight.api.resources.textures.Respriter;
 import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
 import net.mehvahdjukaar.moonlight.api.set.leaves.LeavesType;
-import net.mehvahdjukaar.moonlight.api.set.leaves.LeavesTypeRegistry;
+import net.mehvahdjukaar.moonlight.api.set.leaves.VanillaLeavesTypes;
+import net.mehvahdjukaar.moonlight.api.set.wood.VanillaWoodTypes;
 import net.mehvahdjukaar.moonlight.api.set.wood.WoodType;
-import net.mehvahdjukaar.moonlight.api.set.wood.WoodTypeRegistry;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -33,8 +34,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import static net.mehvahdjukaar.every_compat.EveryCompat.res;
-import static net.mehvahdjukaar.every_compat.common_classes.Utilities.copyChildrenPropertySafe;
-import static net.mehvahdjukaar.every_compat.common_classes.Utilities.doChildrenExistFor;
+import static net.mehvahdjukaar.every_compat.misc.UtilityMisc.copyChildrenPropertySafe;
+import static net.mehvahdjukaar.every_compat.misc.UtilityMisc.doChildrenExistFor;
 
 //SUPPORT: v
 public class BlockusModule extends SimpleModule {
@@ -61,15 +62,15 @@ public class BlockusModule extends SimpleModule {
         ResourceLocation tab = modRes("blockus_building_blocks");
 
         herringbone_planks = SimpleEntrySet.builder(WoodType.class, "planks", "herringbone",
-                        getModBlock("herringbone_oak_planks"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("herringbone_oak_planks"), () -> VanillaWoodTypes.OAK,
                         w -> new Block(Utils.copyPropertySafe(w.planks))
                 )
                 .addTexture(modRes("block/herringbone_oak_planks"))
                 .addTag(BlockTags.MINEABLE_WITH_AXE, Registries.BLOCK)
                 .addTag(BlockTags.PLANKS, Registries.BLOCK)
-                .addTag(TagUtility.fabricTag("planks_that_burn"), Registries.BLOCK)
+                .addTag(UtilityTag.fabricTag("planks_that_burn"), Registries.BLOCK)
                 .addTag(ItemTags.PLANKS, Registries.ITEM)
-                .addTag(TagUtility.fabricTag("planks_that_burn"), Registries.ITEM)
+                .addTag(UtilityTag.fabricTag("planks_that_burn"), Registries.ITEM)
                 .addTag(modRes("herringbone_planks_that_burn"), Registries.ITEM)
                 .setTabKey(tab)
                 .defaultRecipe()
@@ -77,14 +78,14 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(herringbone_planks);
 
         mossy_planks = SimpleEntrySet.builder(WoodType.class, "planks", "mossy",
-                        getModBlock("mossy_oak_planks"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("mossy_oak_planks"), () -> VanillaWoodTypes.OAK,
                         woodType -> new Block(Utils.copyPropertySafe(woodType.planks))
                 )
                 .addTextureM(modRes("block/mossy_oak_planks"), res("block/bus/mossy_oak_planks_m"))
                 .addTag(BlockTags.MINEABLE_WITH_AXE, Registries.BLOCK)
-                .addTag(TagUtility.fabricTag("planks_that_burn"), Registries.BLOCK)
+                .addTag(UtilityTag.fabricTag("planks_that_burn"), Registries.BLOCK)
                 .addTag(modRes("all_mossy_planks"), Registries.BLOCK)
-                .addTag(TagUtility.fabricTag("planks_that_burn"), Registries.ITEM)
+                .addTag(UtilityTag.fabricTag("planks_that_burn"), Registries.ITEM)
                 .setTabKey(tab)
                 .addRecipe(modRes("mossy_oak_planks_from_moss_block"))
                 .addRecipe(modRes("mossy_oak_planks_from_vine"))
@@ -92,7 +93,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(mossy_planks);
 
         mossy_slab = SimpleEntrySet.builder(WoodType.class, "slab", "mossy",
-                        getModBlock("mossy_oak_slab"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("mossy_oak_slab"), () -> VanillaWoodTypes.OAK,
                         woodType  -> new SlabBlock(copyChildrenPropertySafe("slab", woodType))
                 )
                 .requiresFromMap(mossy_planks.blocks) //REASON: textures, recipes
@@ -106,7 +107,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(mossy_slab);
 
         mossy_stairs = SimpleEntrySet.builder(WoodType.class, "stairs", "mossy",
-                        getModBlock("mossy_oak_stairs"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("mossy_oak_stairs"), () -> VanillaWoodTypes.OAK,
                         woodType -> new StairBlock(mossy_planks.blocks.get(woodType).defaultBlockState(),
                                 copyChildrenPropertySafe("stairs", woodType))
 
@@ -122,7 +123,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(mossy_stairs);
 
         grate = SimpleEntrySet.builder(WoodType.class, "grate",
-                        getModBlock("oak_grate"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_grate"), () -> VanillaWoodTypes.OAK,
                         w -> new GrateBlock(Utils.copyPropertySafe(w.planks))
                 )
                 .addTexture(modRes("block/oak_grate"))
@@ -135,7 +136,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(grate);
 
         lattice = SimpleEntrySet.builder(WoodType.class, "lattice",
-                        getModBlock("oak_lattice"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_lattice"), () -> VanillaWoodTypes.OAK,
                         w -> new IronBarsBlock(Utils.copyPropertySafe(w.planks))
                 )
                 .requiresFromMap(grate.blocks) //REASON: textures, recipes
@@ -149,14 +150,14 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(lattice);
 
         mosaic = SimpleEntrySet.builder(WoodType.class, "mosaic",
-                        getModBlock("oak_mosaic"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_mosaic"), () -> VanillaWoodTypes.OAK,
                         woodType -> new Block(Utils.copyPropertySafe(woodType.planks))
                 )
                 .addTexture(modRes("block/oak_mosaic"))
                 .addTag(BlockTags.MINEABLE_WITH_AXE, Registries.BLOCK)
-                .addTag(TagUtility.fabricTag("planks_that_burn"), Registries.BLOCK)
+                .addTag(UtilityTag.fabricTag("planks_that_burn"), Registries.BLOCK)
                 .addTag(modRes("all_wooden_mosaics"), Registries.BLOCK)
-                .addTag(TagUtility.fabricTag("planks_that_burn"), Registries.ITEM)
+                .addTag(UtilityTag.fabricTag("planks_that_burn"), Registries.ITEM)
                 .addTag(modRes("wooden_mosaic_that_burn"), Registries.ITEM)
                 .setTabKey(tab)
                 .defaultRecipe()
@@ -164,7 +165,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(mosaic);
 
         mosaic_slab = SimpleEntrySet.builder(WoodType.class, "mosaic_slab",
-                        getModBlock("oak_mosaic_slab"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_mosaic_slab"), () -> VanillaWoodTypes.OAK,
                         woodType -> new SlabBlock(copyChildrenPropertySafe("slab", woodType))
                 )
                 .requiresFromMap(mosaic.blocks) //REASON: textures, recipes
@@ -178,7 +179,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(mosaic_slab);
 
         mosaic_stairs = SimpleEntrySet.builder(WoodType.class, "mosaic_stairs",
-                        getModBlock("oak_mosaic_stairs"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_mosaic_stairs"), () -> VanillaWoodTypes.OAK,
                         woodType -> new StairBlock(mosaic.blocks.get(woodType).defaultBlockState(),
                                 copyChildrenPropertySafe("stairs", woodType))
 
@@ -194,11 +195,10 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(mosaic_stairs);
 
         small_logs = SimpleEntrySet.builder(WoodType.class, "small_logs",
-                        getModBlock("acacia_small_logs"), () -> WoodTypeRegistry.getValue("acacia"),
+                        getModBlock("acacia_small_logs"), () -> VanillaWoodTypes.ACACIA,
                         w -> new RotatedPillarBlock(Utils.copyPropertySafe(w.planks))
                 )
-                .createPaletteFromChild("log", SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE)
-                .addTexture(modRes("block/acacia_small_logs"))
+                .addTexture(modRes("block/acacia_small_logs"), PaletteStrategies.LOG_SIDE_STANDARD)
                 //TEXTURE: manually generated texture below (acacia_small_logs_top.png)
                 .addTag(BlockTags.MINEABLE_WITH_AXE, Registries.BLOCK)
                 .addTag(BlockTags.LOGS_THAT_BURN, Registries.BLOCK)
@@ -214,7 +214,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(small_logs);
 
         timber_frame = SimpleEntrySet.builder(WoodType.class, "timber_frame",
-                        getModBlock("oak_timber_frame"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_timber_frame"), () -> VanillaWoodTypes.OAK,
                         w -> new Block(Utils.copyPropertySafe(w.planks))
                 )
                 .addTextureM(modRes("block/oak_timber_frame"),
@@ -227,7 +227,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(timber_frame);
 
         diagonal_timber_frame = SimpleEntrySet.builder(WoodType.class, "diagonal_timber_frame",
-                        getModBlock("oak_diagonal_timber_frame"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_diagonal_timber_frame"), () -> VanillaWoodTypes.OAK,
                         w -> new OrientableBlockBase(Utils.copyPropertySafe(w.planks))
                 )
                 .requiresFromMap(timber_frame.blocks) //REASON: recipes
@@ -243,7 +243,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(diagonal_timber_frame);
 
         cross_timber_frame = SimpleEntrySet.builder(WoodType.class, "cross_timber_frame",
-                        getModBlock("oak_cross_timber_frame"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_cross_timber_frame"), () -> VanillaWoodTypes.OAK,
                         w -> new Block(Utils.copyPropertySafe(w.planks))
                 )
                 .requiresFromMap(diagonal_timber_frame.blocks) //REASON: recipes
@@ -257,7 +257,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(cross_timber_frame);
 
         stripped_post = SimpleEntrySet.builder(WoodType.class, "post", "stripped",
-                        getModBlock("stripped_oak_post"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("stripped_oak_post"), () -> VanillaWoodTypes.OAK,
                         w -> new PostBlock(
                                 Utils.copyPropertySafe(Objects.requireNonNull(w.getBlockOfThis("stripped_log")))
                                         .forceSolidOn()
@@ -274,7 +274,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(stripped_post);
 
         post = SimpleEntrySet.builder(WoodType.class, "post",
-                        getModBlock("oak_post"), () -> WoodTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_post"), () -> VanillaWoodTypes.OAK,
                         w -> new PostBlock(Utils.copyPropertySafe(w.log).forceSolidOn())
                 )
                 //TEXTURES: log, log_top
@@ -288,7 +288,7 @@ public class BlockusModule extends SimpleModule {
         this.addEntry(post);
 
         small_hedge = SimpleEntrySet.builder(LeavesType.class, "small_hedge",
-                        getModBlock("oak_small_hedge"), () -> LeavesTypeRegistry.OAK_TYPE,
+                        getModBlock("oak_small_hedge"), () -> VanillaLeavesTypes.OAK,
                         leavesType -> new SmallHedgeBlock(Utils.copyPropertySafe(leavesType.leaves)
                                 .isSuffocating(BlockFactory::never)
                                 .isViewBlocking(BlockFactory::never)
@@ -332,18 +332,16 @@ public class BlockusModule extends SimpleModule {
 
                     try (TextureImage baseLogTopTexture = TextureImage.open(manager, logTopResLoc);
                          TextureImage logSideTexture = TextureImage.open(manager,
-                                 RPUtils.findFirstBlockTextureLocation(manager, woodType.log, SpriteHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE));
+                                 RPUtils.findFirstBlockTextureLocation(manager, woodType.log, CompatSpritesHelper.LOOKS_LIKE_SIDE_LOG_TEXTURE));
                          TextureImage planksTexture = TextureImage.open(manager,
                                  RPUtils.findFirstBlockTextureLocation(manager, woodType.planks))
                     ) {
 
                         String newPath = BlockTypeResTransformer.replaceTypeNoNamespace(texturePath, woodType, blockId, "acacia");
 
-                        // Recoloring the texture
-                        TextureImage finishedTexture = generateLogTopTexture(baseLogTopTexture, logSideTexture, insideMask, planksTexture, edgeMask);
-
                         // Adding to the resource
-                        sink.addTextureIfNotPresent(manager, newPath, () -> finishedTexture);
+                        sink.addTextureIfNotPresent(manager, newPath, () -> 
+                                generateLogTopTexture(baseLogTopTexture, logSideTexture, insideMask, planksTexture, edgeMask));
 
                     } catch (Exception e) {
                         EveryCompat.LOGGER.error("Failed to generate texture for {} : {}", block, e);
@@ -361,13 +359,13 @@ public class BlockusModule extends SimpleModule {
 
         Respriter targetEdge = Respriter.masked(baseTexture, insideMask);
 
-        TextureImage recoloredEdge = targetEdge.recolorWithAnimationOf(logSideTexture);
+        try(TextureImage recoloredEdge = targetEdge.recolorWithAnimationOf(logSideTexture)) {
 
-        Respriter targetInside = Respriter.masked(recoloredEdge, edgeMask);
+            Respriter targetInside = Respriter.masked(recoloredEdge, edgeMask);
 
-        // Finished Texture
-        return targetInside.recolorWithAnimationOf(planksTexture);
-
+            // Finished Texture
+            return targetInside.recolorWithAnimationOf(planksTexture);
+        }
     }
 
     @Override
